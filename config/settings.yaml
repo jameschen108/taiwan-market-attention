@@ -59,7 +59,7 @@ attention:
   # 只會用殘缺窗算出系統性偏向 silent 的錯值（PROJECT.md §2.3）。
   sparsity_min_periods: 52
   # 大量清單型貼文（指數成分股表、處置股排行、程式選股輸出）是資料傾印而非對個股
-  # 的關注。兩個偵測器取**聯集**——只用其中一個都會漏：
+  # 的關注。三個偵測器取**聯集**——只用其中任一個都會漏：
   #   max_tickers_per_article  宇宙內命中的 ticker 數。抓得到以簡稱列出的清單文。
   #   max_codes_per_article    全文**所有**四位數代號數。抓得到「列 151 檔但宇宙內
   #                            只命中 13 檔」的排行表——只數宇宙內的話它會完全逃過，
@@ -171,18 +171,28 @@ regression:
   standardize_within: sparsity_tier
 
 robustness:
-  # 台股制度性的三個混淆，全部在 LIMITATIONS.md §12。前兩項需要新的 TWSE 收集
-  # （P3.5），在資料到位前對應的穩健性標為 PENDING，不得靜默略過。
+  # 台股制度性的三個混淆，全部在 LIMITATIONS.md §12。前兩項已於 P3.5 收集完成
+  # （audit/P3_5_institutions.md）；資料缺席時仍須標 PENDING 並寫入
+  # audit/model_status.csv，不得靜默略過。
   price_limit:
     enabled: true                       # 可由既有日資料直接算，無需新收集
     exclude_weeks_touching_limit: true  # 穩健性：排除含漲跌停日的週
   disposition_stocks:                   # 處置股：分盤交易＋預收款券，直接壓 turnover_next
-    status: PENDING
-    source: "TWSE 處置有價證券（公開資訊觀測站）"
+    # 實得：宇宙內 156 筆、64 檔、面板 321 個處置週（0.49%）。
+    # 處置週的關注度是非處置週的 7–8 倍——混淆已由資料證實。
+    status: AVAILABLE
+    enabled: true
+    source: "TWSE announcement/punish（處置有價證券）"
+    exclude_disposition_weeks: true       # 主穩健性：排除本週為處置週者
+    exclude_next_disposition_weeks: true  # H3b 專用：污染 turnover_next 的是**次週**
     blocks: ["H3b"]
   day_trading:                          # 當沖灌大 volume 卻不改淨部位 → 機械壓縮 ROI
-    status: PENDING
-    source: "TWSE TWTB4U 當日沖銷交易標的成交量值"
+    # TWSE 此端點已改為新版 tables 結構；舊版 data 陣列解析會拿到空清單而不報錯。
+    status: AVAILABLE
+    enabled: true
+    source: "TWSE exchangeReport/TWTB4U（當日沖銷交易標的及成交量值）"
+    control_variable: dt_ratio          # 作為控制變數進入 H3a
+    also_stratify: true                 # 另做高／低當沖分層
     blocks: ["H3a"]
 
 validity:
