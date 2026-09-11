@@ -306,6 +306,8 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
                                 if panel["is_disposition_week"].notna().any() else ""),
         "mean_dt_ratio": (round(float(panel["dt_ratio"].mean()), 4)
                           if panel["dt_ratio"].notna().any() else ""),
+        "mean_dt_value_ratio": (round(float(panel["dt_value_ratio"].mean()), 4)
+                                if panel["dt_value_ratio"].notna().any() else ""),
     }]).to_csv(AUDIT / f"panel_summary{suffix}.csv", index=False)
 
     print(f"panel {len(panel):,} 列 × {panel['ticker'].nunique()} 檔 × "

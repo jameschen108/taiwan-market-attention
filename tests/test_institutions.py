@@ -70,10 +70,12 @@ def test_day_trading_ratio_denominator_comes_from_market_volume(tmp_path):
                    "dt_buy_value": 1.0, "dt_sell_value": 1.0, "dt_restricted": False}]
                  ).to_csv(dt, index=False)
     panel = pd.DataFrame({"ticker": ["2330"], "week": [week_of(pd.Timestamp("2021-06-08"))],
-                          "volume": [1000.0]})
+                          "volume": [1000.0], "value": [50000.0]})
     out, status = attach(panel, tmp_path / "nope.csv", dt, set())
     assert status["day_trading"] == "AVAILABLE"
     assert out.loc[0, "dt_ratio"] == pytest.approx(0.3)
+    # 金額基礎另算，分母是 value 不是 volume
+    assert out.loc[0, "dt_value_ratio"] == pytest.approx(1.0 / 50000.0)
 
 
 def test_day_trading_ratio_missing_when_volume_is_zero(tmp_path):
@@ -82,12 +84,39 @@ def test_day_trading_ratio_missing_when_volume_is_zero(tmp_path):
                    "dt_buy_value": 0.0, "dt_sell_value": 0.0, "dt_restricted": False}]
                  ).to_csv(dt, index=False)
     panel = pd.DataFrame({"ticker": ["2330"], "week": [week_of(pd.Timestamp("2021-06-08"))],
-                          "volume": [0.0]})
+                          "volume": [0.0], "value": [0.0]})
     out, _ = attach(panel, tmp_path / "nope.csv", dt, set())
     assert np.isnan(out.loc[0, "dt_ratio"])
+    assert np.isnan(out.loc[0, "dt_value_ratio"])
 
 
 # ------------------------------------------------------------ 面板層
+
+@pytest.mark.skipif(not PANEL.exists(), reason="面板未建")
+def test_panel_day_trading_fields():
+    """兩種分母都要在面板裡——常引用的「當沖佔比 ~40%」是金額基礎的全市場數字，
+    只給一種會讓讀者比錯對象（LIMITATIONS.md §12.2）。"""
+    p = pd.read_parquet(PANEL)
+    for c in ("dt_ratio", "dt_value_ratio", "dt_volume", "n_dt_restricted_days"):
+        assert c in p.columns, c
+    assert p["dt_ratio"].max() <= 1.0
+    assert p["dt_value_ratio"].max() <= 1.0
+
+
+@pytest.mark.skipif(not PANEL.exists(), reason="面板未建")
+def test_day_trading_confound_has_the_predicted_shape():
+    """§12.2 的形狀：應變數的衰減發生在自變數高的地方。
+
+    若這兩個相關係數的**方向**翻轉，§12.2 的論述就失去實證基礎。
+    """
+    p = pd.read_parquet(PANEL)
+    q = p.dropna(subset=["dt_ratio", "non_inst_roi"])
+    q = q[q["sparsity_tier"].isin(["dense", "sparse"])]
+    corr_att = np.corrcoef(q["dt_ratio"], np.log1p(q["att_all"]))[0, 1]
+    corr_roi = np.corrcoef(q["dt_ratio"], q["non_inst_roi"].abs())[0, 1]
+    assert corr_att > 0.1, "當沖應與關注度正相關"
+    assert corr_roi < -0.1, "當沖應壓縮 |ROI|"
+
 
 @pytest.mark.skipif(not PANEL.exists(), reason="面板未建")
 def test_panel_disposition_fields():

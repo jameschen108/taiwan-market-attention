@@ -98,7 +98,7 @@ def attach(panel: pd.DataFrame, disposition_path: Path, day_trading_path: Path,
     dt = weekly_day_trading(day_trading_path)
     if dt.empty:
         for c in ("dt_volume", "dt_buy_value", "dt_sell_value",
-                  "n_dt_restricted_days", "dt_ratio"):
+                  "n_dt_restricted_days", "dt_ratio", "dt_value", "dt_value_ratio"):
             panel[c] = np.nan
         status["day_trading"] = "PENDING：TWTB4U 未收集"
     else:
@@ -109,6 +109,15 @@ def attach(panel: pd.DataFrame, disposition_path: Path, day_trading_path: Path,
         # 分母用行情面板的週成交股數；volume 為 0 或缺值時 ratio 維持缺值
         denom = panel["volume"].where(panel["volume"] > 0)
         panel["dt_ratio"] = (panel["dt_volume"] / denom).clip(upper=1.0)
+        # 金額基礎另出一個：常被引用的「當沖佔比 ~40%」是**金額**基礎的全市場數字，
+        # 與股數基礎在全市場差近一倍（當沖集中在高價股）。兩個都給，避免比錯對象。
+        panel["dt_value"] = (panel["dt_buy_value"] + panel["dt_sell_value"]) / 2.0
+        if "value" in panel.columns:
+            denom_v = panel["value"].where(panel["value"] > 0)
+            panel["dt_value_ratio"] = (panel["dt_value"] / denom_v).clip(upper=1.0)
+        else:
+            # 行情面板未併入時維持缺值，不以股數基礎頂替
+            panel["dt_value_ratio"] = np.nan
         status["day_trading"] = "AVAILABLE"
 
     return panel, status

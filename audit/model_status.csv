@@ -1,4 +1,4 @@
 item,status,config_key,enabled_in_config
 disposition_stocks,AVAILABLE,robustness.disposition_stocks,True
-day_trading,PENDING：TWTB4U 未收集,robustness.day_trading,True
+day_trading,AVAILABLE,robustness.day_trading,True
 h4_makeup_days,SKIP,hypotheses.h4_makeup_days,False

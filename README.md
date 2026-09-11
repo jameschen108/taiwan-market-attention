@@ -26,9 +26,9 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 | P1 讀取層（雙來源並存） | ✅ 完成 |
 | P2 配對層 | ✅ 完成。歸屬正確率**機器抽驗**兩輪：修正前 93.5% → 修正後 **95.5%**，見 [`audit/adjudication/README.md`](audit/adjudication/README.md) |
 | P3 特徵層 | ✅ 完成，面板 **64,980 列 × 260 檔 × 260 週**，見 [`audit/P3_panel.md`](audit/P3_panel.md) |
-| P3.5 台股制度資料 | ⬜ 未開始：處置股清單、TWTB4U 當沖（`LIMITATIONS.md` §12） |
+| P3.5 台股制度資料 | ✅ 完成：處置股 156 筆／64 檔、當沖 338,194 列／1,458 交易日，見 [`audit/P3_5_institutions.md`](audit/P3_5_institutions.md) |
 | P4 分析層 | ⬜ 未開始 |
-| P5 稽核／測試／文件 | 🚧 **117 項測試通過**；`expected_v2.py` 未建 |
+| P5 稽核／測試／文件 | 🚧 **128 項測試通過**；`expected_v2.py` 未建 |
 
 ### P2 的核心結果
 

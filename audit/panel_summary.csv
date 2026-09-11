@@ -1,2 +1,2 @@
-source,n_rows,n_tickers,n_weeks,rows_dropped_pre_listing,rows_dropped_warmup,first_week,last_week,n_dense_rows,n_sparse_rows,n_silent_rows,n_tier_missing,n_with_ret_next,n_with_ret_gap_next,n_incomplete_weeks,n_weeks_touching_price_limit,ret_definition,abn_baseline,n_with_roi_next,pct_zero_attention,n_disposition_weeks,mean_dt_ratio
-pttcc,64980,260,260,5666,13192,2020-01-12,2024-12-29,2703,35208,27069,0,64207,63436,49,2016,open_to_close,mean,59933,0.824,321,
+source,n_rows,n_tickers,n_weeks,rows_dropped_pre_listing,rows_dropped_warmup,first_week,last_week,n_dense_rows,n_sparse_rows,n_silent_rows,n_tier_missing,n_with_ret_next,n_with_ret_gap_next,n_incomplete_weeks,n_weeks_touching_price_limit,ret_definition,abn_baseline,n_with_roi_next,pct_zero_attention,n_disposition_weeks,mean_dt_ratio,mean_dt_value_ratio
+pttcc,64980,260,260,5666,13192,2020-01-12,2024-12-29,2703,35208,27069,0,64207,63436,49,2016,open_to_close,mean,59933,0.824,321,0.177,0.1773
