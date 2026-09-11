@@ -160,12 +160,14 @@ def test_comment_panel_does_not_overwrite_article_tier():
 
 # ------------------------------------- v2 測度正確性修正（PROJECT.md §0.1）
 
-def test_baseline_is_median_and_mean_is_available():
-    """主規格基準為 median（對齊原論文），mean 保留為穩健性。
+def test_baseline_is_mean_and_median_is_available():
+    """主規格基準沿用 v1 的 mean；median 可選，作為穩健性。
 
-    差別只在回顧窗有爆量時出現：median 不被單週爆量拉高，mean 會，而且會讓爆量之後
-    的零值週產生機械性的負異常值——那是計數的均值回歸，不是關注度下降。
+    **不得因為「原論文用 median」而改主規格**——原論文（Li et al., MIS Quarterly）
+    的 ASVI 基準統計量在本專案的任何文件中都沒有記載（PROJECT.md §0.2）。
+    差別只在回顧窗有爆量時出現：median 不被單週爆量拉高，mean 會。
     """
+    assert load_settings()["attention"]["baseline"] == "mean"
     counts = pd.Series([0] * 8 + [5, 0])
     med = abnormal_attention(counts, 8, 8, "log1p", "median")
     mean = abnormal_attention(counts, 8, 8, "log1p", "mean")

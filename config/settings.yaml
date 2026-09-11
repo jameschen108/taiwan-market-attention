@@ -5,12 +5,11 @@
 # 相對 v1 的差異分兩類：
 #  (a) 期間與語料：ptt（新增）、sample、makeup_days 的 SKIP 旗標。
 #  (b) **測度正確性修正**（PROJECT.md §0.1，全部在跑出任何係數之前定案）：
-#      attention.baseline（mean → median，對齊原論文）、
 #      attention.sparsity_min_periods（1 → 52）、
 #      sample.week_containment（label → full）、
 #      returns.main_definition（open_to_close → close_to_close）、
 #      attention.max_codes_per_article（v1 沒有這個判準）。
-#      這五項都會讓 v2 與 v1 不能逐字對照，A/B/C 三方對照因此必須加一欄 A′
+#      這四項都會讓 v2 與 v1 不能逐字對照，A/B/C 三方對照因此必須加一欄 A′
 #      （v2 程式 × 舊語料 × 全期），見 PROJECT.md §6.7。
 # sparsity / sessions / effort / imbalance / portfolio / regression 各節仍與 v1
 # 逐字相同——動了就無法與 v1 對照（docs/PLAN_V2.md §6）。
@@ -47,11 +46,12 @@ attention:
   lookback_weeks: 8
   min_periods: 8
   transform: log1p
-  # 回顧窗基準的統計量。原論文的 ASVI 用 **median**，理由是不讓回顧窗裡的單週爆量
-  # 把基準拉高；本樣本的 att_weekend 均值 0.13、95% 為零，回顧窗典型長相是
-  # {0,0,0,0,0,0,0,1}，mean 給 0.087、median 給 0，正是 median 要處理的情境。
-  # 主規格 median，mean 保留為穩健性（abn_attention_*_meanbase）。
-  baseline: median                    # median | mean
+  # 回顧窗基準的統計量。**沿用 v1 的 mean**，理由是 §6.7 的四方對照要求 A/A′ 與
+  # v1 逐項可比；原論文（Li et al.，MIS Quarterly）的 ASVI 基準統計量在本專案
+  # 的任何文件中都沒有記載，**不得假設是 median**（PROJECT.md §0.2）。
+  # median 版另出為 abn_attention_*_medianbase，兩者 corr ≈ 0.94。
+  # 若日後自論文確認基準為 median，改這一行並重建 P3 即可，但必須在 P4 開跑前。
+  baseline: mean                      # median | mean
   sparsity_lookback_weeks: 52
   # 52 週窗必須**滿窗**才給值——缺值維持缺值。設 1 的話沒有暖機期也不會報錯，
   # 只會用殘缺窗算出系統性偏向 silent 的錯值（PROJECT.md §2.3）。

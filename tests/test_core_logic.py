@@ -238,8 +238,9 @@ def test_thresholds_locked_before_results():
     assert s["attention"]["max_codes_per_article"] == 15
     assert s["attention"]["lookback_weeks"] == 8
     assert s["sparsity"]["dense_min_nonzero_weeks"] == 40
-    # v2 的五項測度正確性修正，全部在跑出任何係數之前定案（PROJECT.md §0.1）
-    assert s["attention"]["baseline"] == "median"
+    # v2 的四項測度正確性修正，全部在跑出任何係數之前定案（PROJECT.md §0.1）
+    # baseline 不在其中：沿用 v1 的 mean，因為原論文的基準統計量無記載（§0.2）
+    assert s["attention"]["baseline"] == "mean"
     assert s["attention"]["sparsity_min_periods"] == s["attention"]["sparsity_lookback_weeks"]
     assert s["sample"]["week_containment"] == "full"
     assert s["returns"]["main_definition"] == "close_to_close"
@@ -290,3 +291,18 @@ def test_v1_comparability_sections_unchanged():
     assert s["sessions"] == {"market_open_minute": 540, "market_close_minute": 810}
     assert s["regression"]["cluster"] == ["ticker", "week"]
     assert s["imbalance"]["min_daily_volume_shares"] == 10000
+
+
+def test_source_paper_is_cited_in_the_spec():
+    """原論文必須寫在規格裡，不能只活在 v1 的 repo。
+
+    v2 的文件一度完全沒有引用，結果是有人（Claude）憑「這是一篇關注度論文」
+    推成 Da-Engelberg-Gao，並據此把 `attention.baseline` 改成 median。
+    引用缺席不是排版問題，是會改到係數的問題（LIMITATIONS.md §13）。
+    """
+    spec = Path("PROJECT.md").read_text(encoding="utf-8")
+    assert "It Depends on When You Search" in spec
+    assert "MIS Quarterly" in spec
+    assert "4370525" in spec
+    # 原論文的推論標準必須寫出來——v1 的週末係數在兩種標準間跨過 5%
+    assert "僅 cluster 至個股" in spec

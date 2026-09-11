@@ -1,7 +1,8 @@
 # 台股長尾關注度（v2）
 
-用 PTT 股板的關注度預測次週報酬，聚焦**長尾個股**——原論文
-（Da, Engelberg & Gao 2011, *JF*，SVI → 次週報酬）的研究對象是 Russell 3000，
+把 **Li, Liu, Ye, Zhao & Zhao, *"It Depends on When You Search"*（MIS Quarterly、
+[SSRN 4370525](https://ssrn.com/abstract=4370525)）** 的「非交易時段關注度預測次週
+報酬」研究設計移植到台股，聚焦**長尾個股**——原論文的樣本是 S&P 500（2004–2019），
 台灣長尾個股的邊界條件未被檢驗過。刻意偏離原論文之處逐項列於
 [`PROJECT.md`](PROJECT.md) §0.2。
 
@@ -36,13 +37,14 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 
 ### P4 開跑前的規格複核（2026-09-11）
 
-五項測度正確性修正在看到任何係數之前定案，見 [`PROJECT.md`](PROJECT.md) §0.1：
-異常值基準 mean → **median**（對齊原論文）、52 週窗 `min_periods` 1 → **52**、
-週涵蓋改為**完整落在樣本期內**（262 → 260 週）、報酬改為 **close-to-close**
-（週末缺口佔週報酬變異 8.3%）、zero-base 虛擬變數改為**逐窗口**。
+四項測度正確性修正在看到任何係數之前定案，見 [`PROJECT.md`](PROJECT.md) §0.1：
+52 週窗 `min_periods` 1 → **52**、週涵蓋改為**完整落在樣本期內**（262 → 260 週）、
+報酬改為 **close-to-close**（週末缺口佔週報酬變異 8.3%）、zero-base 虛擬變數改為
+**逐窗口**（週末窗口的覆蓋率 58.2% → 100%）。異常值基準**維持 v1 的 mean**。
 
-同時新增三條限制：[`LIMITATIONS.md`](LIMITATIONS.md) §11（主要自變數在建構上
-接近二元）、§12（處置股／當沖／漲跌停三個台股制度混淆）、§13（三方對照需補 A′）。
+同時新增四條限制：[`LIMITATIONS.md`](LIMITATIONS.md) §11（主要自變數在建構上
+接近二元）、§12（處置股／當沖／漲跌停三個台股制度混淆）、§13（原論文的建構細節
+不得靠推論補）、§14（三方對照需補 A′）。
 
 **在歸屬正確率重抽驗完成前，任何係數都不得引用**（`LIMITATIONS.md` §6.3）。
 
