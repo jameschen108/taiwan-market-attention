@@ -1,0 +1,30 @@
+# 原始語料體積過大，不進版控（pttcc 3.6 GB）
+/data/pttcc/
+/data/data.zip
+# 指向 v1 專案的唯讀來源資料
+/data/pttweb
+/data/raw
+/data/external
+/data/twse
+# 中間產物可由 raw 重建
+/data/interim/
+/data/processed/
+
+# 授權資料與金鑰
+.env
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# 執行記錄（工作產物，非交付項）
+/logs/

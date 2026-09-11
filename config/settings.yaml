@@ -1,0 +1,110 @@
+# 台股長尾關注度專案 v2 設定
+#
+# 所有門檻在跑出任何係數之前寫死於此，不得在分析中臨時調整（PROJECT.md §0）。
+# 相對 v1 只改三節：ptt（新增）、sample（期間）、以及 makeup_days 的 SKIP 旗標。
+# attention / sparsity / sessions / effort / imbalance / portfolio / regression
+# 各節與 v1 逐字相同——動了就無法與 v1 對照（docs/PLAN_V2.md §6）。
+
+ptt:
+  source: pttcc                 # pttcc | pttweb；規格 B 需切回 pttweb
+  root: data/pttcc
+  pttweb_root: data/pttweb
+  timestamp_field: date_ts      # 文章 ID 內含的 unix 時戳，PTT 上不可竄改
+  date_audit_tolerance_days: 1  # date 與 date_ts 相差超過此值列入稽核表
+  comments:
+    enabled: true
+    inherit_article_tickers: true     # 留言繼承母文章的 ticker（PROJECT.md §4.4）
+    inherit_bulk_listing_flag: true   # bulk 旗標必須向下傳遞，否則汙染比 v1 更嚴重
+    drop_missing_timestamp: true      # 缺時戳的留言不進任何窗口，但計入稽核總數
+
+sample:
+  # 新語料實得範圍（含暖機年）
+  ptt_archive_start: "2019-01-01"
+  ptt_archive_end: "2024-12-31"
+  main_start: "2020-01-01"           # 主樣本起點
+  main_end: "2024-12-31"             # 主樣本終點
+  ptt_warmup_start: "2019-01-01"     # 只進回顧窗，不進主樣本（PLAN_V2 §3.2 選項 a）
+  price_backfill_start: "2018-01-01" # 供 25 週動能與領先落後對齊
+  price_backfill_end: "2025-03-31"   # 供最後一週的次週報酬
+  week_anchor: "W-SUN"               # 星期日錨定
+  pilot_months: 32
+
+attention:
+  lookback_weeks: 8
+  min_periods: 8
+  transform: log1p
+  sparsity_lookback_weeks: 52
+  max_tickers_per_article: 15
+  exclude_bulk_listing: true
+  bulk_listing_sensitivity_grid: [5, 10, 15, 20, 30, 999]
+
+sparsity:
+  dense_min_nonzero_weeks: 40
+  silent_max_nonzero_weeks: 3
+  sensitivity_grid:
+    dense_min_nonzero_weeks: [30, 35, 40, 45, 50]
+    silent_max_nonzero_weeks: [1, 3, 5, 8]
+
+sessions:
+  market_open_minute: 540        # 09:00
+  market_close_minute: 810       # 13:30
+
+effort:
+  high_effort:
+    categories: ["標的"]
+    original_only: true
+  mid_effort:
+    categories: ["請益", "心得", "標的"]
+    include_replies: true
+  low_effort:
+    categories: ["新聞", "閒聊", "情報", "公告"]
+  # v2 的推文有 user_id 與分鐘級時戳，但主規格的 effort 分層仍只用文章，
+  # 以維持與 v1 的可對照性。推文另建平行測度（PROJECT.md §2.4）。
+  pushes_have_timestamps: true
+  pushes_in_effort_tiers: false
+
+imbalance:
+  min_daily_volume_shares: 10000
+  min_valid_days_per_week: 3
+  sensitivity_grid:
+    min_daily_volume_shares: [0, 5000, 10000, 20000, 50000]
+
+returns:
+  min_trading_days_per_week: 5
+  benchmarks: ["week_fe", "taiex", "sample_equal_weight"]
+
+portfolio:
+  n_quantiles: 5
+  fee_rate: 0.001425
+  fee_discount: 0.6
+  tax_rate: 0.003
+  slippage_bps: 20
+  tradability_min_daily_value_twd: 5000000
+
+institutions:
+  # 三個 2015–2017 的斷點落在 v2 樣本外，相關穩健性檢定在 v2 失效（PLAN_V2 §8）
+  price_limit_change: "2015-06-01"     # 樣本外
+  day_trade_tax_cut: "2017-04-28"      # 樣本外
+  continuous_trading: "2020-03-23"     # 樣本內
+  odd_lot_trading: "2020-10-26"        # 樣本內
+  sector_reclassification: "2023-01-01"
+
+hypotheses:
+  # H4 補班日自然實驗：2020–2024 補行交易日 0 天，不是檢定力不足而是事件為零。
+  # 對應模組必須明確 SKIP 並寫入 audit/model_status.csv，不得靜默略過。
+  h4_makeup_days: SKIP
+  h4_skip_reason: "TWSE 自 2019 年起不再補行交易；2020–2024 補班星期六交易日為 0 天"
+
+regression:
+  cluster: ["ticker", "week"]
+  fixed_effects: ["ticker", "week"]
+  winsorize: [0.01, 0.99]
+  standardize_within: sparsity_tier
+
+validity:
+  min_code_name_corr: 0.5
+  manual_review_per_tier: 50
+  manual_review_per_collision_member: 20
+  # v1 的 77.6% → 95% 是在舊語料上做的，v2 必須以新語料重抽驗
+  target_attribution_accuracy: 0.95
+  review_sample_size: 550

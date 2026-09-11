@@ -1,0 +1,3 @@
+group,n,median_pushes,mean_pushes,median_body_chars,pct_reply
+deleted,23505,31,37.6,303,0.2748
+control_month_matched,23505,49,48.6,636,0.2524
