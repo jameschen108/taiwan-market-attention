@@ -1,7 +1,9 @@
 # 台股長尾關注度（v2）
 
-用 PTT 股板的關注度預測次週報酬，聚焦**長尾個股**——原論文（SVI → 次週報酬）的
-研究對象是有分析師覆蓋的大型股，台灣長尾個股的邊界條件未被檢驗過。
+用 PTT 股板的關注度預測次週報酬，聚焦**長尾個股**——原論文
+（Da, Engelberg & Gao 2011, *JF*，SVI → 次週報酬）的研究對象是 Russell 3000，
+台灣長尾個股的邊界條件未被檢驗過。刻意偏離原論文之處逐項列於
+[`PROJECT.md`](PROJECT.md) §0.2。
 
 v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用**新語料**
 重做：改用 ptt.cc 直爬，換到帶留言帳號與時戳的資料，期間縮短為 2020–2024。
@@ -22,15 +24,25 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 | P0 語料落地與完整性稽核 | ✅ 完成，見 [`audit/P0_corpus_integrity.md`](audit/P0_corpus_integrity.md) |
 | P1 讀取層（雙來源並存） | ✅ 完成 |
 | P2 配對層 | ✅ 程式完成，見 [`audit/P2_matching.md`](audit/P2_matching.md)；🚧 歸屬正確率抽驗已抽樣＋初判，待人工覆核 |
-| P3 特徵層 | ✅ 完成，面板 65,484 列 × 260 檔 × 262 週，見 [`audit/P3_panel.md`](audit/P3_panel.md) |
+| P3 特徵層 | ✅ 完成，面板 **64,980 列 × 260 檔 × 260 週**，見 [`audit/P3_panel.md`](audit/P3_panel.md) |
+| P3.5 台股制度資料 | ⬜ 未開始：處置股清單、TWTB4U 當沖（`LIMITATIONS.md` §12） |
 | P4 分析層 | ⬜ 未開始 |
-| P5 稽核／測試／文件 | 🚧 68 項測試通過；`expected_v2.py` 未建 |
+| P5 稽核／測試／文件 | 🚧 **82 項測試通過**；`expected_v2.py` 未建 |
 
 ### P2 的核心結果
 
 以母文章時戳指派窗口（v1 唯一能做的事）會**低估週末關注度 22.4%**，且位移是
 單向的——平日發文→週末留言是反向的 3.9 倍。見 [`audit/P2_matching.md`](audit/P2_matching.md) §3。
-| P6 交付 | ⬜ 未開始 |
+
+### P4 開跑前的規格複核（2026-09-11）
+
+五項測度正確性修正在看到任何係數之前定案，見 [`PROJECT.md`](PROJECT.md) §0.1：
+異常值基準 mean → **median**（對齊原論文）、52 週窗 `min_periods` 1 → **52**、
+週涵蓋改為**完整落在樣本期內**（262 → 260 週）、報酬改為 **close-to-close**
+（週末缺口佔週報酬變異 8.3%）、zero-base 虛擬變數改為**逐窗口**。
+
+同時新增三條限制：[`LIMITATIONS.md`](LIMITATIONS.md) §11（主要自變數在建構上
+接近二元）、§12（處置股／當沖／漲跌停三個台股制度混淆）、§13（三方對照需補 A′）。
 
 **在歸屬正確率重抽驗完成前，任何係數都不得引用**（`LIMITATIONS.md` §6.3）。
 
@@ -81,7 +93,10 @@ python3 -m src.audit_categories --sources pttcc,pttweb
 
 # P2：配對層
 python3 -m src.ptt.transform --source pttcc         # 主規格（規格 C）
-python3 -m src.ptt.transform --source pttweb        # 規格 A／B
+python3 -m src.ptt.transform --source pttweb        # 規格 A′／B
+
+# P3：特徵層與面板
+python3 -m src.features.build --source pttcc
 
 # 測試
 python3 -m pytest tests/ -q

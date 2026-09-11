@@ -18,10 +18,16 @@ EFFORTS = ("high_effort", "mid_effort", "low_effort")
 
 
 def abnormal_attention(counts: pd.Series, lookback: int = 8,
-                       min_periods: int = 8, transform: str = "log1p") -> pd.Series:
-    """AbnAtt = f(Att_w) − mean(f(Att_{w-8..w-1}))。
+                       min_periods: int = 8, transform: str = "log1p",
+                       baseline: str = "median") -> pd.Series:
+    """AbnAtt = f(Att_w) − g(f(Att_{w-8..w-1}))，g 為 median（主規格）或 mean。
 
     回顧窗**嚴格不含當期**，避免 look-ahead。不足 min_periods 維持缺值。
+
+    **basis 為什麼是 median**：原論文的 ASVI 用回顧窗的中位數，理由是不讓窗內的
+    單週爆量把基準拉高。本樣本恰好最吃這一點——`att_weekend` 均值 0.13、95% 為零，
+    回顧窗典型長相是 {0,0,0,0,0,0,0,1}，mean 給 0.087、median 給 0。
+    mean 版保留為穩健性（`abn_attention_*_meanbase`），兩者 corr ≈ 0.94。
     """
     if transform == "log1p":
         values = np.log1p(counts.astype(float))
@@ -30,20 +36,32 @@ def abnormal_attention(counts: pd.Series, lookback: int = 8,
         values = np.log(counts.astype(float).where(counts > 0))
     else:
         raise ValueError(f"未知 transform: {transform}")
-    baseline = values.shift(1).rolling(lookback, min_periods=min_periods).mean()
-    return values - baseline
+    roll = values.shift(1).rolling(lookback, min_periods=min_periods)
+    if baseline == "median":
+        base = roll.median()
+    elif baseline == "mean":
+        base = roll.mean()
+    else:
+        raise ValueError(f"未知 baseline: {baseline}")
+    return values - base
 
 
 def sparsity_fields(counts: pd.Series, lookback_weeks: int = 52,
-                    abn_lookback: int = 8) -> pd.DataFrame:
-    """稀疏度欄位（PROJECT.md §2.3）。全部只用**過去**資訊。"""
+                    abn_lookback: int = 8, min_periods: int | None = None) -> pd.DataFrame:
+    """稀疏度欄位（PROJECT.md §2.3）。全部只用**過去**資訊。
+
+    52 週窗**必須滿窗**（`min_periods = lookback_weeks`）。設 1 的話沒有暖機期也
+    不會報錯，只會用殘缺窗算出系統性偏向 `silent` 的錯值——那違反專案的「缺值維持
+    缺值」規則，而且會讓「補爬 2019」這個決策失去可驗證的理由。
+    """
     counts = counts.astype(float)
     nonzero = (counts > 0).astype(float)
+    mp = lookback_weeks if min_periods is None else min_periods
     return pd.DataFrame({
         "att_nonzero_weeks_52": nonzero.shift(1)
-            .rolling(lookback_weeks, min_periods=1).sum(),
+            .rolling(lookback_weeks, min_periods=mp).sum(),
         "att_mean_level_52": counts.shift(1)
-            .rolling(lookback_weeks, min_periods=1).mean(),
+            .rolling(lookback_weeks, min_periods=mp).mean(),
         "is_initiation": (
             (counts > 0)
             & (counts.shift(1).rolling(abn_lookback, min_periods=abn_lookback).sum() == 0)
@@ -168,8 +186,24 @@ def build_comment_panel(comments: pd.DataFrame, weeks: pd.DatetimeIndex,
 
 def _finalize(panel: pd.DataFrame, idx: pd.MultiIndex, att: dict, spa: dict,
               base_col: str = "att_all", tier_prefix: str = "") -> pd.DataFrame:
-    """逐檔計算異常值與稀疏度。每檔獨立，不得跨檔滾動。"""
+    """逐檔計算異常值與稀疏度。每檔獨立，不得跨檔滾動。
+
+    **逐窗口的 zero-base（PROJECT.md §2.3）**：`AbnAtt = 0` 有兩個意義完全不同的
+    來源——「回顧窗全零、當期也零」的長尾股，與「關注度剛好等於常態水準」的台積電。
+    分辨它們的虛擬變數必須**與自變數同窗口**。只用 `att_all` 算一個總表旗標是不夠的：
+    實測 `abn_attention_weekend` 恰為 0 的列佔 78.2%，其中 75.8 pp 屬前者，而
+    `att_all` 版的旗標只蓋到其中 57.3%。
+    """
     count_cols = [c for c in panel.columns if c.startswith("att_")]
+    lookback, mp = att["lookback_weeks"], att["min_periods"]
+    transform, baseline = att["transform"], att.get("baseline", "median")
+    sp_mp = att.get("sparsity_min_periods", att["sparsity_lookback_weeks"])
+    # 主要自變數所在的窗口都要有自己的 zero-base；base_col 一律包含
+    zero_base_cols = [base_col] + [
+        c for c in count_cols
+        if c[len("att_"):].replace("comment_", "").replace("users_", "")
+        in CALENDAR_WINDOWS + SESSION_WINDOWS]
+
     out = []
     for _, grp in panel.groupby(level="ticker", sort=False):
         grp = grp.sort_index(level="week")
@@ -177,16 +211,27 @@ def _finalize(panel: pd.DataFrame, idx: pd.MultiIndex, att: dict, spa: dict,
         for col in count_cols:
             label = col[len("att_"):]
             block[f"abn_attention_{label}"] = abnormal_attention(
-                grp[col], att["lookback_weeks"], att["min_periods"], att["transform"]
-            ).values
+                grp[col], lookback, mp, transform, baseline).values
             if label in ("all", "weekend", "weekday"):
                 block[f"abn_attention_{label}_posonly"] = abnormal_attention(
-                    grp[col], att["lookback_weeks"], att["min_periods"], "log_positive"
-                ).values
+                    grp[col], lookback, mp, "log_positive", baseline).values
+                # 基準統計量的穩健性：主規格 median，此欄為 mean（PROJECT.md §2）
+                other = "mean" if baseline == "median" else "median"
+                block[f"abn_attention_{label}_{other}base"] = abnormal_attention(
+                    grp[col], lookback, mp, transform, other).values
+
         sp = sparsity_fields(grp[base_col], att["sparsity_lookback_weeks"],
-                             att["lookback_weeks"])
+                             lookback, min_periods=sp_mp)
         for col in sp.columns:
             block[f"{tier_prefix}{col}"] = sp[col].values
+
+        # 逐窗口的 zero-base：回顧窗在**該窗口**全為零
+        for col in dict.fromkeys(zero_base_cols):
+            label = col[len("att_"):]
+            allzero = (grp[col].astype(float).shift(1)
+                       .rolling(lookback, min_periods=lookback).sum() == 0)
+            block[f"att_zero_base_{label}"] = allzero.astype("Int64").values
+
         if tier_prefix == "":
             block["is_initiation_weekend"] = (
                 block["is_initiation"].values & (grp["att_weekend"].values > 0))
@@ -198,7 +243,7 @@ def _finalize(panel: pd.DataFrame, idx: pd.MultiIndex, att: dict, spa: dict,
     nz = panel[f"{tier_prefix}att_nonzero_weeks_52"]
     panel[f"{tier_prefix}sparsity_tier"] = sparsity_tier(
         nz, spa["dense_min_nonzero_weeks"], spa["silent_max_nonzero_weeks"])
-    # 回顧窗全零者另設虛擬變數吸收，不得當成 AbnAtt = 0
+    # 沿用名稱：att_zero_base 恆等於 base_col 的窗口版，供既有下游引用
     panel[f"{tier_prefix}att_zero_base"] = (
-        panel[f"{tier_prefix}att_lookback_all_zero"].fillna(False).astype(int))
+        panel[f"att_zero_base_{base_col[len('att_'):]}"].fillna(0).astype(int))
     return panel

@@ -156,3 +156,49 @@ def test_comment_panel_does_not_overwrite_article_tier():
     panel = build_comment_panel(pd.DataFrame(rows), weeks, ["2330"], load_settings())
     assert "sparsity_tier" not in panel.columns
     assert "comment_sparsity_tier" in panel.columns
+
+
+# ------------------------------------- v2 測度正確性修正（PROJECT.md §0.1）
+
+def test_baseline_is_median_and_mean_is_available():
+    """主規格基準為 median（對齊原論文），mean 保留為穩健性。
+
+    差別只在回顧窗有爆量時出現：median 不被單週爆量拉高，mean 會，而且會讓爆量之後
+    的零值週產生機械性的負異常值——那是計數的均值回歸，不是關注度下降。
+    """
+    counts = pd.Series([0] * 8 + [5, 0])
+    med = abnormal_attention(counts, 8, 8, "log1p", "median")
+    mean = abnormal_attention(counts, 8, 8, "log1p", "mean")
+    assert med.iloc[9] == 0.0                      # 回顧窗中位數仍為 0 → 異常值為 0
+    assert mean.iloc[9] < 0                        # mean 被那一週的 5 拉高 → 假的負值
+    with pytest.raises(ValueError):
+        abnormal_attention(counts, 8, 8, "log1p", "mode")
+
+
+def test_sparsity_window_must_be_full():
+    """52 週窗未滿窗必須維持缺值——設 min_periods=1 會算出偏向 silent 的錯值。"""
+    counts = pd.Series([1.0] * 10)
+    sp = sparsity_fields(counts, lookback_weeks=52, abn_lookback=8)
+    assert sp["att_nonzero_weeks_52"].isna().all()
+    assert sp["att_mean_level_52"].isna().all()
+    # 滿窗後才給值
+    full = sparsity_fields(pd.Series([1.0] * 60), 52, 8)
+    assert full["att_nonzero_weeks_52"].iloc[-1] == 52
+
+
+def test_zero_base_is_built_per_window():
+    """`AbnAtt = 0` 的兩個意義必須用**與自變數同窗口**的虛擬變數分辨。
+
+    只用 att_all 版會漏掉「整體有關注度、但週末窗口全零」的列——實測那是主要
+    自變數恰為零的列中的大多數。
+    """
+    weeks = _weeks(12)
+    # 平日每週都有文章、週末一篇都沒有 → att_all 的 zero-base 為 0，週末的必須為 1
+    rows = [{"ticker": "2330", "week": w, "window": "weekday",
+             "session": "intraday", "effort": "low_effort", "author_id": "u1"}
+            for w in weeks]
+    panel = build_attention_panel(pd.DataFrame(rows), weeks, ["2330"], load_settings())
+    last = panel.iloc[-1]
+    assert last["att_zero_base_all"] == 0
+    assert last["att_zero_base_weekend"] == 1
+    assert last["abn_attention_weekend"] == 0      # 正是需要被旗標分辨的那個 0

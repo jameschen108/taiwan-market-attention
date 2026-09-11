@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import re
+from functools import lru_cache
 from datetime import datetime
 from pathlib import Path
 from typing import Iterator
@@ -51,6 +52,20 @@ def parse_title(title: str) -> tuple[str, bool]:
     return "未分類", is_reply
 
 
+@lru_cache(maxsize=1)
+def _effort_map() -> tuple[frozenset, frozenset, frozenset]:
+    """分層清單的**唯一**來源是 `config/settings.yaml` 的 `effort:` 區塊。
+
+    以前這份清單硬寫在本函式裡，設定檔另有一份而且少了 `爆卦`／`投顧`——兩份真相
+    會漂移，而且 §0 的「門檻鎖在設定檔」對 effort 形同不成立。現在只有一份。
+    """
+    from ..config import load_settings
+    e = load_settings()["effort"]
+    return (frozenset(e["high_effort"]["categories"]),
+            frozenset(e["mid_effort"]["categories"]),
+            frozenset(e["low_effort"]["categories"]))
+
+
 def effort_tier(category: str, is_reply: bool) -> str:
     """認知投入分層（PROJECT.md §3）。
 
@@ -58,11 +73,12 @@ def effort_tier(category: str, is_reply: bool) -> str:
     v2 的推文雖有時戳與帳號，主規格的 effort 分層仍只用文章，以維持與 v1 可對照；
     推文另建平行測度（PROJECT.md §2.4）。
     """
-    if category == "標的":
+    high, mid, low = _effort_map()
+    if category in high:
         return "mid_effort" if is_reply else "high_effort"
-    if category in ("請益", "心得"):
+    if category in mid:
         return "mid_effort"
-    if category in ("新聞", "閒聊", "情報", "公告", "爆卦", "投顧"):
+    if category in low:
         return "low_effort"
     return "unclassified"
 

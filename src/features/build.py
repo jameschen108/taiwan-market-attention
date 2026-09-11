@@ -24,7 +24,9 @@ import pandas as pd
 from ..config import ROOT, load_settings, load_universe_config
 from .attention import build_attention_panel, build_comment_panel
 from .imbalance import abnormal_turnover, weekly_non_inst_roi
-from .sessions import assign_calendar_window, assign_session_window, week_of
+from .sessions import week_of
+
+_RET_COL = {"close_to_close": "ret_cc", "open_to_close": "ret_oc"}
 
 INTERIM = ROOT / "data" / "interim"
 PROCESSED = ROOT / "data" / "processed"
@@ -49,10 +51,28 @@ def assign_windows(df: pd.DataFrame, ts_col: str, trading_days: set) -> pd.DataF
 
 
 def _weekly_market(daily: pd.DataFrame, settings: dict) -> pd.DataFrame:
-    """日資料 → 週資料：週一開盤至週五收盤報酬、周轉率、ROI、流動性。"""
+    """日資料 → 週資料：三段式報酬、周轉率、ROI、流動性、漲跌停旗標。
+
+    **報酬拆成三段**（PROJECT.md §5）：
+
+        ret_gap = 本週首個交易日開盤 / 上週最後交易日收盤 − 1   跨週末缺口
+        ret_oc  = 本週最後收盤 / 本週首個開盤 − 1                週內
+        ret_cc  = 本週最後收盤 / 上週最後收盤 − 1                = 合成，主規格
+
+    缺口不是可忽略的零頭：佔週報酬變異 8.3%、平均 +14.0 bp（週報酬總平均 30.2 bp），
+    且與隨後的週內報酬 corr = −0.084——正是價格壓力管道預測的「衝擊 ＋ 反轉」。
+    只用 `ret_oc` 估週末係數，等於把衝擊那一段切掉、只留反轉那一段。
+    §6.6 投資組合仍用 `ret_oc`：週日看到訊號，最早週一開盤才成交，缺口不可得。
+    """
     imb = settings["imbalance"]
+    rets = settings["returns"]
+    limit = float(rets.get("price_limit_pct", 0.10)) - 0.0015   # 0.0985：含撮合誤差
     df = daily.copy()
     df["week"] = df["date"].map(week_of)
+    df = df.sort_values(["ticker", "date"])
+    df["_prev_close"] = df.groupby("ticker")["adj_close"].shift(1)
+    df["_dret"] = df["adj_close"] / df["_prev_close"] - 1.0
+    df["_at_limit"] = df["_dret"].abs() >= limit
 
     agg = df.groupby(["ticker", "week"]).agg(
         n_trading_days=("date", "size"),
@@ -66,10 +86,22 @@ def _weekly_market(daily: pd.DataFrame, settings: dict) -> pd.DataFrame:
         foreign_holding_pct=("foreign_holding_pct", "last"),
         amihud=("amihud", "mean"),
         zero_volume_days=("volume", lambda s: int((s == 0).sum())),
+        n_limit_days=("_at_limit", "sum"),
     ).reset_index()
 
-    agg["ret"] = agg["close_adj"] / agg["open_adj"] - 1.0
-    agg.loc[agg["open_adj"].isna() | agg["close_adj"].isna(), "ret"] = np.nan
+    agg = agg.sort_values(["ticker", "week"])
+    g = agg.groupby("ticker", sort=False)
+    # 上一個**日曆週**的收盤；跳週（休市整週）時維持缺值，不得跨過去取
+    prev_ok = g["week"].shift(1) == agg["week"] - pd.Timedelta(days=7)
+    prev_close = g["close_adj"].shift(1).where(prev_ok)
+
+    agg["ret_oc"] = agg["close_adj"] / agg["open_adj"] - 1.0      # 週內（可實作）
+    agg["ret_gap"] = agg["open_adj"] / prev_close - 1.0           # 跨週末缺口
+    agg["ret_cc"] = agg["close_adj"] / prev_close - 1.0           # 主規格
+    bad = agg["open_adj"].isna() | agg["close_adj"].isna()
+    agg.loc[bad, ["ret_oc", "ret_gap", "ret_cc"]] = np.nan
+    agg["ret"] = agg[_RET_COL[rets.get("main_definition", "close_to_close")]]
+    agg["touched_price_limit"] = agg["n_limit_days"] > 0
 
     roi_parts = []
     for ticker, grp in df.groupby("ticker", sort=False):
@@ -99,8 +131,14 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
     start, end = pd.Timestamp(smp["main_start"]), pd.Timestamp(smp["main_end"])
     weeks = pd.date_range(week_of(warm), week_of(end), freq="7D")
     tickers = uni["ticker"].tolist()
+    containment = smp.get("week_containment", "full")
+    main_weeks = [w for w in weeks
+                  if (w - pd.Timedelta(days=6)) >= start and w <= end] \
+        if containment == "full" else \
+        [w for w in weeks if week_of(start) <= w <= week_of(end)]
     print(f"  週軸 {len(weeks)} 週（含暖機期 {week_of(warm).date()} 起）；"
-          f"主樣本 {week_of(start).date()} ~ {week_of(end).date()}")
+          f"主樣本 {len(main_weeks)} 週 {main_weeks[0].date()} ~ {main_weeks[-1].date()}"
+          f"（week_containment={containment}）")
 
     # --- 文章層 ---
     matches = pd.read_parquet(INTERIM / f"ptt_matches_{source}.parquet")
@@ -155,7 +193,12 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
     panel = panel.sort_values(["ticker", "week"]).reset_index(drop=True)
     g = panel.groupby("ticker", sort=False)
     nxt_ok = g["week"].shift(-1) == panel["week"] + pd.Timedelta(days=7)
-    for src_col, dst in [("ret", "ret_next"), ("non_inst_roi", "non_inst_roi_next")]:
+    # 三段式報酬各領先一週：主規格 ret_next（= ret_cc_next），另出缺口與週內兩段
+    # 供 §6.1 的分解規格，以及 §6.6 用可實作的 ret_oc_next
+    for src_col, dst in [("ret", "ret_next"), ("ret_cc", "ret_cc_next"),
+                         ("ret_oc", "ret_oc_next"), ("ret_gap", "ret_gap_next"),
+                         ("non_inst_roi", "non_inst_roi_next"),
+                         ("touched_price_limit", "touched_price_limit_next")]:
         panel[dst] = g[src_col].shift(-1).where(nxt_ok)
     panel["abn_turnover"] = g["turnover"].transform(abnormal_turnover)
     panel["turnover_next"] = panel.groupby("ticker", sort=False)["abn_turnover"] \
@@ -186,16 +229,28 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
     panel["is_code_only_matched"] = panel["ticker"].isin(code_only)
 
     # --- 產業內外溢 ---
+    own = panel["abn_attention_weekend"]
     sec = panel.groupby(["sector", "week"])["abn_attention_weekend"]
+    # 自身為缺值時它本來就不在 sum／count 裡，分母不得再減一
+    n_peers = sec.transform("count") - own.notna().astype(int)
     panel["sector_peer_abn_att_weekend"] = (
-        (sec.transform("sum") - panel["abn_attention_weekend"].fillna(0))
-        / (sec.transform("count") - 1).replace(0, np.nan))
+        (sec.transform("sum") - own.fillna(0)) / n_peers.replace(0, np.nan))
     panel["abn_att_weekend_rel_sector"] = (
         panel["abn_attention_weekend"] - sec.transform("mean"))
 
     # --- 最後才裁到主樣本：暖機期只餵滾動窗，不進任何表格 ---
+    #
+    # 週必須**完整**落在 [main_start, main_end] 內（`sample.week_containment: full`）。
+    # 以週標籤落點判定會兩端各污染一週：
+    #   2020-01-05 涵蓋 2019-12-30~2020-01-05 → 暖機期洩漏進主樣本（違反 §1）
+    #   2025-01-05 涵蓋 2024-12-30~2025-01-05 → 語料止於 2024-12-31，該週
+    #                                            att_weekend 恆為 0、ret_next 全缺值
     n_with_warmup = len(panel)
-    panel = panel[(panel["week"] >= week_of(start)) & (panel["week"] <= week_of(end))]
+    if smp.get("week_containment", "full") == "full":
+        in_main = ((panel["week"] - pd.Timedelta(days=6)) >= start) & (panel["week"] <= end)
+    else:
+        in_main = (panel["week"] >= week_of(start)) & (panel["week"] <= week_of(end))
+    panel = panel[in_main]
     panel = panel.reset_index(drop=True)
     print(f"  裁掉暖機期 {n_with_warmup - len(panel):,} 列")
 
@@ -220,6 +275,11 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
         "n_silent_rows": int((panel["sparsity_tier"] == "silent").sum()),
         "n_tier_missing": int(panel["sparsity_tier"].isna().sum()),
         "n_with_ret_next": int(panel["ret_next"].notna().sum()),
+        "n_with_ret_gap_next": int(panel["ret_gap_next"].notna().sum()),
+        "n_incomplete_weeks": int(panel.drop_duplicates("week")["is_incomplete_week"].sum()),
+        "n_weeks_touching_price_limit": int(panel["touched_price_limit"].sum()),
+        "ret_definition": settings["returns"].get("main_definition", "close_to_close"),
+        "abn_baseline": settings["attention"].get("baseline", "median"),
         "n_with_roi_next": int(panel["non_inst_roi_next"].notna().sum()),
         "pct_zero_attention": round(float((panel["att_all"] == 0).mean()), 4),
     }]).to_csv(AUDIT / f"panel_summary{suffix}.csv", index=False)

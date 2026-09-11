@@ -1,9 +1,19 @@
 # 台股長尾關注度專案 v2 設定
 #
 # 所有門檻在跑出任何係數之前寫死於此，不得在分析中臨時調整（PROJECT.md §0）。
-# 相對 v1 只改三節：ptt（新增）、sample（期間）、以及 makeup_days 的 SKIP 旗標。
-# attention / sparsity / sessions / effort / imbalance / portfolio / regression
-# 各節與 v1 逐字相同——動了就無法與 v1 對照（docs/PLAN_V2.md §6）。
+#
+# 相對 v1 的差異分兩類：
+#  (a) 期間與語料：ptt（新增）、sample、makeup_days 的 SKIP 旗標。
+#  (b) **測度正確性修正**（PROJECT.md §0.1，全部在跑出任何係數之前定案）：
+#      attention.baseline（mean → median，對齊原論文）、
+#      attention.sparsity_min_periods（1 → 52）、
+#      sample.week_containment（label → full）、
+#      returns.main_definition（open_to_close → close_to_close）、
+#      attention.max_codes_per_article（v1 沒有這個判準）。
+#      這五項都會讓 v2 與 v1 不能逐字對照，A/B/C 三方對照因此必須加一欄 A′
+#      （v2 程式 × 舊語料 × 全期），見 PROJECT.md §6.7。
+# sparsity / sessions / effort / imbalance / portfolio / regression 各節仍與 v1
+# 逐字相同——動了就無法與 v1 對照（docs/PLAN_V2.md §6）。
 
 ptt:
   source: pttcc                 # pttcc | pttweb；規格 B 需切回 pttweb
@@ -27,13 +37,25 @@ sample:
   price_backfill_start: "2018-01-01" # 供 25 週動能與領先落後對齊
   price_backfill_end: "2025-03-31"   # 供最後一週的次週報酬
   week_anchor: "W-SUN"               # 星期日錨定
+  # 週必須**完整**落在 [main_start, main_end] 內才進主樣本。以週標籤落點判定會讓
+  # 首週含 2019-12-30/31（暖機期洩漏）、末週含 2025-01-01..05（語料外，週末關注度
+  # 恆為零）。完整涵蓋規則 → 260 週（2020-01-12 ~ 2024-12-29）。
+  week_containment: full             # full | label
   pilot_months: 32
 
 attention:
   lookback_weeks: 8
   min_periods: 8
   transform: log1p
+  # 回顧窗基準的統計量。原論文的 ASVI 用 **median**，理由是不讓回顧窗裡的單週爆量
+  # 把基準拉高；本樣本的 att_weekend 均值 0.13、95% 為零，回顧窗典型長相是
+  # {0,0,0,0,0,0,0,1}，mean 給 0.087、median 給 0，正是 median 要處理的情境。
+  # 主規格 median，mean 保留為穩健性（abn_attention_*_meanbase）。
+  baseline: median                    # median | mean
   sparsity_lookback_weeks: 52
+  # 52 週窗必須**滿窗**才給值——缺值維持缺值。設 1 的話沒有暖機期也不會報錯，
+  # 只會用殘缺窗算出系統性偏向 silent 的錯值（PROJECT.md §2.3）。
+  sparsity_min_periods: 52
   # 大量清單型貼文（指數成分股表、處置股排行、程式選股輸出）是資料傾印而非對個股
   # 的關注。兩個偵測器取**聯集**——只用其中一個都會漏：
   #   max_tickers_per_article  宇宙內命中的 ticker 數。抓得到以簡稱列出的清單文。
@@ -65,7 +87,9 @@ effort:
     categories: ["請益", "心得", "標的"]
     include_replies: true
   low_effort:
-    categories: ["新聞", "閒聊", "情報", "公告"]
+    # 與 PROJECT.md §3 逐項相同；本區塊是 effort_tier() 的**唯一**來源
+    # （src/ptt/parse.py 由此讀取，不得另寫一份）
+    categories: ["新聞", "閒聊", "情報", "公告", "爆卦", "投顧"]
   # v2 的推文有 user_id 與分鐘級時戳，但主規格的 effort 分層仍只用文章，
   # 以維持與 v1 的可對照性。推文另建平行測度（PROJECT.md §2.4）。
   pushes_have_timestamps: true
@@ -78,7 +102,14 @@ imbalance:
     min_daily_volume_shares: [0, 5000, 10000, 20000, 50000]
 
 returns:
-  min_trading_days_per_week: 5
+  min_trading_days_per_week: 5        # 低於此值的週標為 is_incomplete_week
+  # 三段式報酬（PROJECT.md §5）。跨週末缺口佔週報酬變異 8.3%、平均 +14 bp，
+  # 且與隨後的週內報酬 corr = −0.084——正是價格壓力預測的「衝擊＋反轉」形狀。
+  # 只用 open_to_close 等於把衝擊那一段切掉、只留反轉那一段來估週末係數。
+  main_definition: close_to_close     # H1/H3/H5 主規格
+  portfolio_definition: open_to_close # §6.6 可實作性：週日看到訊號，最早週一開盤成交
+  decompose_gap: true                 # 另出 ret_gap_next / ret_oc_next 各跑一次
+  price_limit_pct: 0.10               # 漲跌幅上限；|日報酬| ≥ 0.0985 標為觸及
   benchmarks: ["week_fe", "taiex", "sample_equal_weight"]
 
 portfolio:
@@ -106,8 +137,44 @@ hypotheses:
 regression:
   cluster: ["ticker", "week"]
   fixed_effects: ["ticker", "week"]
+  # §6.1 的 γ'X。**這份清單就是 §7 `formal_main_return` 的判準**——缺一則正式主表
+  # 直接中止，不降級輸出。標 (未取得) 者為授權資料，是本專案所有結果仍為
+  # diagnostic 的根因（LIMITATIONS.md §5）。
+  controls:
+    available:
+      - log_market_cap
+      - turnover
+      - amihud
+      - ret_lag1
+      - ret_lag4
+      - ret_lag25
+      - foreign_holding_pct
+      - listing_age_years
+      - week_n_trading_days        # 不含週固定效果的規格必帶（PROJECT.md §5.0）
+    required_but_missing:
+      - news_count                 # (未取得) 新聞管道
+      - analyst_coverage           # (未取得) 授權資料
+      - factor_4                   # (未取得) 四因子
+  # 不含週固定效果的規格（描述統計、T13 相關係數、§6.6 分位數建構）必須另帶
+  # week_n_trading_days——19.5% 的週不足 5 個交易日，ret 的標準差由 0.012 變動到 0.048
+  controls_required_without_week_fe: ["week_n_trading_days"]
   winsorize: [0.01, 0.99]
   standardize_within: sparsity_tier
+
+robustness:
+  # 台股制度性的三個混淆，全部在 LIMITATIONS.md §12。前兩項需要新的 TWSE 收集
+  # （P3.5），在資料到位前對應的穩健性標為 PENDING，不得靜默略過。
+  price_limit:
+    enabled: true                       # 可由既有日資料直接算，無需新收集
+    exclude_weeks_touching_limit: true  # 穩健性：排除含漲跌停日的週
+  disposition_stocks:                   # 處置股：分盤交易＋預收款券，直接壓 turnover_next
+    status: PENDING
+    source: "TWSE 處置有價證券（公開資訊觀測站）"
+    blocks: ["H3b"]
+  day_trading:                          # 當沖灌大 volume 卻不改淨部位 → 機械壓縮 ROI
+    status: PENDING
+    source: "TWSE TWTB4U 當日沖銷交易標的成交量值"
+    blocks: ["H3a"]
 
 validity:
   min_code_name_corr: 0.5

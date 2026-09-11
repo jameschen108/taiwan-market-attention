@@ -19,7 +19,16 @@ CLOSE_MIN = 13 * 60 + 30   # 13:30
 
 
 def assign_session_window(ts: pd.Timestamp, trading_days: set[dt.date]) -> str:
-    """交易日的 09:00–13:30 為 intraday，其餘一律 non_trading。"""
+    """交易日的 09:00–13:30 為 intraday，其餘一律 non_trading。
+
+    刻意歸入 `non_trading` 的兩段台股時間（PROJECT.md §2.1）：
+      - 08:30–09:00 開盤前試撮：有揭示試算價、可掛單，但無成交。
+      - 13:30 後的盤後定價交易（14:00–14:30）與 2020-10-26 前的盤後零股。
+    2020-03-23 起收盤前 5 分鐘（13:25–13:30）為集合競價，仍在 intraday 區間內。
+
+    **生產路徑用的是 `build.assign_windows` 的向量化版本**，本函式為同一規則的
+    純量參照實作，由 `tests/test_panel.py::test_window_rules_agree` 守住兩者一致。
+    """
     date = ts.date() if isinstance(ts, pd.Timestamp) else ts.date()
     minutes = ts.hour * 60 + ts.minute
     if date in trading_days and OPEN_MIN <= minutes < CLOSE_MIN:
@@ -33,9 +42,11 @@ def assign_calendar_window(ts: pd.Timestamp) -> str:
 
 
 def next_trading_day(ts: pd.Timestamp, trading_days_sorted: list[dt.date]) -> dt.date | None:
-    """非交易時段的關注度歸屬到下一個開市日（PROJECT.md §2.1）。
+    """該時點之後最近的開市日。
 
-    交易日盤中／盤後皆歸屬：盤中歸當日，收盤後歸下一個開市日。長假不得落到錯的週。
+    **這不是窗口指派規則。** 窗口一律用時戳自己的 W-SUN 週（`week_of`）與交易時段
+    判定（`assign_session_window`）；本函式只用於 `attention_week` 的期末守門——
+    樣本末尾之後已無開市日者無法指派報酬期，回傳 None 並列入排除清單（§1 終點規則）。
     """
     import bisect
 

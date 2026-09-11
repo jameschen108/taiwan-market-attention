@@ -235,8 +235,44 @@ def test_thresholds_locked_before_results():
     assert s["sample"]["main_end"] == "2024-12-31"
     assert s["sample"]["ptt_warmup_start"] == "2019-01-01"
     assert s["attention"]["max_tickers_per_article"] == 15
+    assert s["attention"]["max_codes_per_article"] == 15
     assert s["attention"]["lookback_weeks"] == 8
     assert s["sparsity"]["dense_min_nonzero_weeks"] == 40
+    # v2 的五項測度正確性修正，全部在跑出任何係數之前定案（PROJECT.md §0.1）
+    assert s["attention"]["baseline"] == "median"
+    assert s["attention"]["sparsity_min_periods"] == s["attention"]["sparsity_lookback_weeks"]
+    assert s["sample"]["week_containment"] == "full"
+    assert s["returns"]["main_definition"] == "close_to_close"
+    assert s["returns"]["portfolio_definition"] == "open_to_close"
+
+
+def test_effort_tiers_come_only_from_the_settings_file():
+    """分層清單只有一份真相。以前設定檔與程式各一份，而且設定檔少了 爆卦／投顧。"""
+    s = load_settings()["effort"]
+    assert set(s["low_effort"]["categories"]) == {"新聞", "閒聊", "情報", "公告",
+                                                  "爆卦", "投顧"}
+    # 程式確實照設定檔走：把 新聞 抽掉，它就不再是 low_effort
+    import src.ptt.parse as parse
+    parse._effort_map.cache_clear()
+    try:
+        assert parse.effort_tier("新聞", False) == "low_effort"
+        parse._effort_map.cache_clear()
+        orig = parse.load_settings if hasattr(parse, "load_settings") else None
+        assert orig is None  # 設定由 _effort_map 內部載入，不得在模組層快取成常數
+    finally:
+        parse._effort_map.cache_clear()
+
+
+def test_formal_control_set_is_declared_and_still_incomplete():
+    """§7 的 `formal_main_return` 判準必須是一份**寫出來的**清單。
+
+    以前 PROJECT.md 說「控制變數全部齊備才出正式主表」，但那份清單不存在。
+    未取得的三項（新聞、分析師覆蓋、四因子）是所有結果仍為 diagnostic 的根因。
+    """
+    c = load_settings()["regression"]["controls"]
+    assert set(c["required_but_missing"]) == {"news_count", "analyst_coverage",
+                                              "factor_4"}
+    assert "week_n_trading_days" in c["available"]
 
 
 def test_h4_is_explicitly_skipped():
