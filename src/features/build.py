@@ -24,6 +24,7 @@ import pandas as pd
 from ..config import ROOT, load_settings, load_universe_config
 from .attention import build_attention_panel, build_comment_panel
 from .imbalance import abnormal_turnover, weekly_non_inst_roi
+from .institutions import attach as attach_institutions
 from .sessions import week_of
 
 _RET_COL = {"close_to_close": "ret_cc", "open_to_close": "ret_oc"}
@@ -224,6 +225,12 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
     panel["regime_odd_lot"] = panel["week"] >= pd.Timestamp(ic["odd_lot_trading"])
     panel["listing_age_years"] = (panel["week"] - panel["listing_date"]).dt.days / 365.25
 
+    # --- 台股制度性混淆（LIMITATIONS.md §12）---
+    panel, inst_status = attach_institutions(
+        panel, INTERIM / "disposition.csv", INTERIM / "day_trading.csv", trading_days)
+    for k, v in inst_status.items():
+        print(f"  {k}: {v}")
+
     # --- 通用詞降級標記 ---
     code_only = set(load_universe_config().get("code_only_tickers", []))
     panel["is_code_only_matched"] = panel["ticker"].isin(code_only)
@@ -254,13 +261,26 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
     panel = panel.reset_index(drop=True)
     print(f"  裁掉暖機期 {n_with_warmup - len(panel):,} 列")
 
-    PROCESSED.mkdir(parents=True, exist_ok=True)
     suffix = "" if source == "pttcc" else f"_{source}"
+    PROCESSED.mkdir(parents=True, exist_ok=True)
     panel.to_parquet(PROCESSED / f"panel{suffix}.parquet", index=False)
     panel[panel["sparsity_tier"] == "dense"].to_parquet(
         PROCESSED / f"panel_dense{suffix}.parquet", index=False)
 
     AUDIT.mkdir(exist_ok=True)
+    # 資料缺席的穩健性項目必須明確記錄，不得靜默略過（PROJECT.md §6）
+    rob = settings.get("robustness", {})
+    pd.DataFrame([
+        {"item": k, "status": v,
+         "config_key": f"robustness.{k}",
+         "enabled_in_config": bool(rob.get(k, {}).get("enabled", rob.get(k)))}
+        for k, v in inst_status.items()
+    ] + [{"item": "h4_makeup_days",
+          "status": settings["hypotheses"]["h4_makeup_days"],
+          "config_key": "hypotheses.h4_makeup_days",
+          "enabled_in_config": False}]
+    ).to_csv(AUDIT / f"model_status{suffix}.csv", index=False)
+
     pd.DataFrame([{
         "source": source,
         "n_rows": len(panel),
@@ -282,6 +302,10 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
         "abn_baseline": settings["attention"].get("baseline", "median"),
         "n_with_roi_next": int(panel["non_inst_roi_next"].notna().sum()),
         "pct_zero_attention": round(float((panel["att_all"] == 0).mean()), 4),
+        "n_disposition_weeks": (int(panel["is_disposition_week"].sum())
+                                if panel["is_disposition_week"].notna().any() else ""),
+        "mean_dt_ratio": (round(float(panel["dt_ratio"].mean()), 4)
+                          if panel["dt_ratio"].notna().any() else ""),
     }]).to_csv(AUDIT / f"panel_summary{suffix}.csv", index=False)
 
     print(f"panel {len(panel):,} 列 × {panel['ticker'].nunique()} 檔 × "
