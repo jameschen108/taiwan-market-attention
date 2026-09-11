@@ -21,10 +21,10 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 |---|---|
 | P0 語料落地與完整性稽核 | ✅ 完成，見 [`audit/P0_corpus_integrity.md`](audit/P0_corpus_integrity.md) |
 | P1 讀取層（雙來源並存） | ✅ 完成 |
-| P2 配對層 | 🚧 pttcc 跑完（122,562 文章列／1,399 萬留言列），見 [`audit/P2_matching.md`](audit/P2_matching.md)；歸屬正確率重抽驗未做 |
-| P3 特徵層 | 🚧 關注度與窗口完成，面板組裝未做 |
+| P2 配對層 | ✅ 程式完成，見 [`audit/P2_matching.md`](audit/P2_matching.md)；🚧 歸屬正確率抽驗已抽樣＋初判，待人工覆核 |
+| P3 特徵層 | ✅ 完成，面板 65,484 列 × 260 檔 × 262 週，見 [`audit/P3_panel.md`](audit/P3_panel.md) |
 | P4 分析層 | ⬜ 未開始 |
-| P5 稽核／測試／文件 | 🚧 46 項測試通過；`expected_v2.py` 未建 |
+| P5 稽核／測試／文件 | 🚧 68 項測試通過；`expected_v2.py` 未建 |
 
 ### P2 的核心結果
 

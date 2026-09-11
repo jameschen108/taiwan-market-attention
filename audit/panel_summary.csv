@@ -1,0 +1,2 @@
+source,n_rows,n_tickers,n_weeks,rows_dropped_pre_listing,rows_dropped_warmup,first_week,last_week,n_dense_rows,n_sparse_rows,n_silent_rows,n_tier_missing,n_with_ret_next,n_with_roi_next,pct_zero_attention
+pttcc,65484,260,262,5666,12688,2020-01-05,2025-01-05,2911,36624,25949,0,64451,60170,0.8146
