@@ -243,7 +243,7 @@ def test_thresholds_locked_before_results():
     assert s["attention"]["baseline"] == "mean"
     assert s["attention"]["sparsity_min_periods"] == s["attention"]["sparsity_lookback_weeks"]
     assert s["sample"]["week_containment"] == "full"
-    assert s["returns"]["main_definition"] == "close_to_close"
+    assert s["returns"]["main_definition"] == "open_to_close"   # 論文 Table 3a 註
     assert s["returns"]["portfolio_definition"] == "open_to_close"
 
 

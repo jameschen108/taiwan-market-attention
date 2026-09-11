@@ -262,13 +262,14 @@ sample:
 `sparsity`、`sessions`、`effort`、`imbalance`、`portfolio` 各節**一律不動**——動了
 就無法與 v1 對照。
 
-> **此處原本把 `attention` 與 `regression` 也列為不動，已被 `PROJECT.md` §0.1
-> 推翻。** 四項測度正確性修正（52 週窗滿窗、週涵蓋、報酬定義、逐窗口 zero-base）
-> 在 P4 開跑前定案：它們是「有沒有量到要量的東西」的問題，與假說方向無關，優先於
-> 與 v1 的逐字可對照性。代價是必須補規格 A′（§3.4）。
+> **此處原本把 `attention` 也列為不動，已被 `PROJECT.md` §0.1 部分推翻。**
+> 四項測度正確性修正（52 週窗滿窗、週涵蓋、bulk 代號判準、逐窗口 zero-base）在
+> P4 開跑前定案：它們是「有沒有量到要量的東西」的問題，與假說方向無關，優先於與
+> v1 的逐字可對照性。代價是必須補規格 A′（§3.4）。
 >
-> **`attention.baseline` 不在其中**：曾誤改為 median（理由建立在錯誤的論文引用上），
-> 已回退為 v1 的 mean。見 `LIMITATIONS.md` §13。
+> **`attention.baseline` 與 `returns` 不在其中**：兩者都曾被誤改（median、
+> close_to_close），理由建立在對原論文的錯誤推測上，經核對 PDF 後已回退。
+> 論文的建構細節現已逐項列於 `PROJECT.md` §0.2。見 `LIMITATIONS.md` §13。
 
 ---
 

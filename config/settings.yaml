@@ -7,10 +7,12 @@
 #  (b) **測度正確性修正**（PROJECT.md §0.1，全部在跑出任何係數之前定案）：
 #      attention.sparsity_min_periods（1 → 52）、
 #      sample.week_containment（label → full）、
-#      returns.main_definition（open_to_close → close_to_close）、
-#      attention.max_codes_per_article（v1 沒有這個判準）。
+#      attention.max_codes_per_article（v1 沒有這個判準）、
+#      逐窗口的 att_zero_base。
 #      這四項都會讓 v2 與 v1 不能逐字對照，A/B/C 三方對照因此必須加一欄 A′
 #      （v2 程式 × 舊語料 × 全期），見 PROJECT.md §6.7。
+#      **attention.baseline 與 returns.main_definition 不在其中**——兩者都曾被誤改，
+#      理由建立在對原論文的錯誤推測上，已依論文原文回退（LIMITATIONS.md §13）。
 # sparsity / sessions / effort / imbalance / portfolio / regression 各節仍與 v1
 # 逐字相同——動了就無法與 v1 對照（docs/PLAN_V2.md §6）。
 
@@ -103,12 +105,14 @@ imbalance:
 
 returns:
   min_trading_days_per_week: 5        # 低於此值的週標為 is_incomplete_week
-  # 三段式報酬（PROJECT.md §5）。跨週末缺口佔週報酬變異 8.3%、平均 +14 bp，
-  # 且與隨後的週內報酬 corr = −0.084——正是價格壓力預測的「衝擊＋反轉」形狀。
-  # 只用 open_to_close 等於把衝擊那一段切掉、只留反轉那一段來估週末係數。
-  main_definition: close_to_close     # H1/H3/H5 主規格
+  # 主規格 open_to_close：**原論文的應變數就是「Monday open to Friday close」**
+  # （Table 3a 註，PDF p.16），v1 亦同。不得為了「缺口才是價格壓力的落點」而改成
+  # close_to_close——那是一項**提案中的偏離**，不是修正，須經同意（PROJECT.md §5.0）。
+  main_definition: open_to_close      # H1/H3/H5 主規格，與論文、v1 一致
   portfolio_definition: open_to_close # §6.6 可實作性：週日看到訊號，最早週一開盤成交
-  decompose_gap: true                 # 另出 ret_gap_next / ret_oc_next 各跑一次
+  # 但缺口仍須量出來並另跑一組：它佔週報酬變異 8.3%、平均 +13.7 bp，且與隨後的
+  # 週內報酬 corr = −0.086。論文與 v1 都沒有量過這一段，這是 v2 的**新增**證據線。
+  decompose_gap: true                 # 另出 ret_gap_next / ret_cc_next 各跑一次
   price_limit_pct: 0.10               # 漲跌幅上限；|日報酬| ≥ 0.0985 標為觸及
   benchmarks: ["week_fe", "taiex", "sample_equal_weight"]
 

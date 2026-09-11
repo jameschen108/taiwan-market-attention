@@ -357,18 +357,27 @@ ROI = (inst_sell − inst_buy) / (2·volume − inst_buy − inst_sell)
 ## 13. 【v2 新增】原論文的建構細節不得靠推論補
 
 原論文是 **Li, Liu, Ye, Zhao & Zhao, "It Depends on When You Search", *MIS
-Quarterly***（SSRN 4370525；S&P 500，2004–2019；個股固定效果；僅 cluster 至個股）。
-這個引用**在 v2 的文件裡一度完全缺席**，只存在於 v1 的 `README.md` 與
-`output/T13_paper_comparison.md`。
+Quarterly***（SSRN 4370525）。這個引用**在 v2 的文件裡一度完全缺席**，只存在於
+v1 的 `README.md` 與 `output/T13_paper_comparison.md`。
 
-後果已經發生過一次：有一版把 `attention.baseline` 由 mean 改成 median，理由寫成
-「對齊原論文的 ASVI」，實際上那是**另一篇論文**（Da-Engelberg-Gao 2011）的慣例，
-而本研究的原論文用什麼基準統計量，兩個 repo 都沒有記載。改動已回退，引用已補進
-`PROJECT.md` §0.2。
+後果：有一版從「SVI → 次週報酬」把原論文推成 Da-Engelberg-Gao (2011)，並據此改了
+兩項設定。**兩項都與論文原文相反**：
 
-**規則**：需要原論文的建構細節（基準統計量、回顧窗長度、轉換方式、控制變數集合）
-時，**回去讀論文**，或明寫「沿用 v1 的做法，論文原始做法未考證」。不得以其他關注度
-文獻的慣例代入。
+| 誤改 | 推測的理由 | 論文實際（已核對原文） |
+|---|---|---|
+| `attention.baseline` mean → median | 「原論文的 ASVI 用 median」 | **平均**（§3.2 p.10、Table 1 p.12、§3.3 p.13） |
+| `returns.main_definition` open_to_close → close_to_close | 「週末缺口才是價格壓力的落點」 | **Monday open to Friday close**（Table 3a 註 p.16） |
+
+兩項均已回退。第一項若不回退會讓主要自變數退化（恰為零的列 78% → 94%）；第二項
+是把一項**提案中的偏離**寫成了「修正」。論文的建構細節現已逐項列在
+`PROJECT.md` §0.2，並由 `test_source_paper_is_cited_in_the_spec` 守住不再消失。
+
+**規則**：需要原論文的建構細節時，**回去讀論文**（`ssrn-4370525.pdf`），或明寫
+「沿用 v1 的做法，論文原始做法未考證」。不得以其他關注度文獻的慣例代入。
+
+**仍未解決的一項**：論文自身不一致——正文 p.10 說「average lagged **log(SVI)**」
+（對數的平均），Table 1 p.12 說「**log of the average SVI**」（水準平均的對數），
+兩者不等價。本專案沿用 v1 的讀法（對數的平均），與正文一致。要改須在 P4 開跑前。
 
 **一項連帶的正面義務**：原論文用個股 FE ＋ 僅個股 cluster，本研究用雙向 FE ＋
 雙重 cluster。v1 的週末係數在兩種推論標準之間**跨過 5% 門檻**（t = 1.82 vs 2.36）。

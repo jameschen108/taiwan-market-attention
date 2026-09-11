@@ -220,11 +220,15 @@ def test_returns_decompose_exactly(panel):
     assert ok.sum() > 60_000
 
 
-def test_main_return_follows_the_configured_definition(panel, settings):
-    """主規格報酬含跨週末缺口——只用 open_to_close 等於把價格壓力的衝擊段切掉。"""
-    assert settings["returns"]["main_definition"] == "close_to_close"
+def test_main_return_follows_the_paper(panel, settings):
+    """主規格報酬是 Monday open → Friday close，與**原論文的應變數定義相同**。
+
+    論文 Table 3a 註：「the abnormal returns (Monday open to Friday close) during
+    the next week」。改成 close_to_close 是一項提案中的偏離，不是修正。
+    """
+    assert settings["returns"]["main_definition"] == "open_to_close"
     ok = panel["ret"].notna()
-    assert np.allclose(panel.loc[ok, "ret"], panel.loc[ok, "ret_cc"])
+    assert np.allclose(panel.loc[ok, "ret"], panel.loc[ok, "ret_oc"])
     # 缺口不是零頭：佔週報酬變異 8% 量級，且不可被 ret_oc 代表
     assert panel["ret_gap"].var() / panel["ret_cc"].var() > 0.05
     assert panel["ret_gap"].corr(panel["ret_oc"]) < 0
