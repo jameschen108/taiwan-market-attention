@@ -34,7 +34,15 @@ attention:
   min_periods: 8
   transform: log1p
   sparsity_lookback_weeks: 52
+  # 大量清單型貼文（指數成分股表、處置股排行、程式選股輸出）是資料傾印而非對個股
+  # 的關注。兩個偵測器取**聯集**——只用其中一個都會漏：
+  #   max_tickers_per_article  宇宙內命中的 ticker 數。抓得到以簡稱列出的清單文。
+  #   max_codes_per_article    全文**所有**四位數代號數。抓得到「列 151 檔但宇宙內
+  #                            只命中 13 檔」的排行表——只數宇宙內的話它會完全逃過，
+  #                            而「是不是資料傾印」是貼文自己的性質，不該取決於我們
+  #                            抽了哪 267 檔。
   max_tickers_per_article: 15
+  max_codes_per_article: 15
   exclude_bulk_listing: true
   bulk_listing_sensitivity_grid: [5, 10, 15, 20, 30, 999]
 

@@ -16,7 +16,7 @@ import pytest
 from src.config import load_settings, load_universe_config
 from src.ptt.ingest_jsonl import Article, Comment, _as_bool, _parse_article
 from src.ptt.parse import effort_tier, has_comment_metadata, parse_title
-from src.ptt.transform import _rows_for_article
+from src.ptt.transform import _rows_for_article, count_codes
 from src.universe.name_matching import build_matcher, normalize, strip_ptt_template
 
 
@@ -119,7 +119,7 @@ def _article(tickers_text: str, n_comments: int = 2, ts=None) -> Article:
 def test_comments_inherit_article_tickers(matcher):
     """留言繼承母文章的 ticker，不對留言文字另行比對（PROJECT.md §4.4）。"""
     art = _article("2330 台積電 買進 與 1101 台泥 股價", n_comments=3)
-    arows, crows = _rows_for_article(art, matcher, max_tickers=15,
+    arows, crows = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
                                      source="pttcc", want_comments=True)
     tickers = {r["ticker"] for r in arows}
     assert tickers == {"2330", "1101"}
@@ -139,16 +139,53 @@ def test_bulk_listing_flag_propagates_to_comments(matcher):
         "1227 佳格 買進",
     ])
     art = _article(listing, n_comments=2)
-    arows, crows = _rows_for_article(art, matcher, max_tickers=15,
+    arows, crows = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
                                      source="pttcc", want_comments=True)
     assert arows[0]["n_tickers_in_article"] > 15
     assert all(r["is_bulk_listing"] for r in arows)
     assert crows and all(r["is_bulk_listing"] for r in crows)
 
 
+def test_bulk_detected_by_total_codes_even_when_few_are_in_universe(matcher):
+    """處置股／買賣超排行表列 151 檔，宇宙內只命中 13 檔——只數宇宙內會完全逃過。
+
+    「是不是資料傾印」是貼文自己的性質，不該取決於我們抽了哪 267 檔。
+    """
+    # 宇宙外代號（8xxx/9xxx 不在 267 檔內）＋ 兩檔宇宙內
+    outside = " ".join(f"{8000+i} 某公司 買超" for i in range(20))
+    art = _article(f"2330 台積電 買超\n1101 台泥 買超\n{outside}", n_comments=2)
+    arows, crows = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
+                                     source="pttcc", want_comments=True)
+    assert arows[0]["n_tickers_in_article"] <= 15      # 宇宙內命中很少
+    assert arows[0]["n_codes_in_article"] > 15         # 但全文代號很多
+    assert all(r["is_bulk_listing"] for r in arows)    # 仍須標記
+    assert crows and all(r["is_bulk_listing"] for r in crows)
+
+
+def test_bulk_rule_is_a_union_not_a_replacement(matcher):
+    """以簡稱列出、完全不寫代號的清單文，仍須由 ticker 數判準抓到。"""
+    # 刻意避開通用詞降級的 54 檔——它們停用簡稱比對，只用代號，拿來當測資會測錯規則
+    names = "、".join(["愛之味", "台聚", "台達化", "堤維西", "車王電", "復盛應用",
+                       "台達電", "楠梓電", "中興電", "三洋電", "葡萄王", "美吾華",
+                       "寶齡富錦", "和康生", "凱撒衛", "東和鋼鐵", "高興昌",
+                       "第一銅", "中鋼構", "匯僑設計"])
+    art = _article(f"{names} 股價 都漲停", n_comments=1)
+    arows, _ = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
+                                 source="pttcc", want_comments=True)
+    assert arows[0]["n_codes_in_article"] == 0         # 一個代號都沒有
+    assert arows[0]["n_tickers_in_article"] > 15
+    assert all(r["is_bulk_listing"] for r in arows)
+
+
+def test_count_codes_ignores_ptt_template():
+    """發文樣板的「(例 2330 台積電)」不該灌進代號計數。"""
+    assert count_codes("[標的] (例 2330 台積電)", "") == 0
+    assert count_codes("[標的] 2330 台積電", "還有 1101 台泥") == 2
+
+
 def test_unmatched_article_produces_no_rows(matcher):
     art = _article("今天天氣很好，沒有提到任何個股")
-    assert _rows_for_article(art, matcher, 15, "pttcc", True) == ((), ())
+    assert _rows_for_article(art, matcher, 15, 15, "pttcc", True) == ((), ())
 
 
 def test_missing_comment_timestamp_stays_missing(matcher):
@@ -160,7 +197,7 @@ def test_missing_comment_timestamp_stays_missing(matcher):
         timestamp=art.timestamp, header_date=None, author_id="p", author_nickname="",
         ip="", location="", meta_recovered=False, n_push=1, n_boo=0, n_arrow=0,
         n_comments=1, comments=(blank,), source_file="t.jsonl")
-    _, crows = _rows_for_article(art2, matcher, 15, "pttcc", True)
+    _, crows = _rows_for_article(art2, matcher, 15, 15, "pttcc", True)
     assert crows and crows[0]["timestamp"] is None
     assert crows[0]["article_timestamp"] == art.timestamp
 

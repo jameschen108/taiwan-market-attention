@@ -1,8 +1,8 @@
 metric,n,pct
-n_comment_rows_nonbulk,9110540,
-weekend_by_article_timestamp_v1,827411,0.0908
-weekend_by_comment_timestamp_v2,1013016,0.1112
-weekday_article_weekend_comment,249831,0.0274
-weekend_article_weekday_comment,64226,0.007
-window_disagreement_total,314057,0.0345
-v1_weekend_understatement,185605,0.2243
+n_comment_rows_nonbulk,8435502,
+weekend_by_article_timestamp_v1,791134,0.0938
+weekend_by_comment_timestamp_v2,967655,0.1147
+weekday_article_weekend_comment,237802,0.0282
+weekend_article_weekday_comment,61281,0.0073
+window_disagreement_total,299083,0.0355
+v1_weekend_understatement,176521,0.2231
