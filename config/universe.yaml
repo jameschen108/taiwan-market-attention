@@ -210,6 +210,9 @@ tickers:
     - text: 信大
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 投
+      - 相
   '1110':
     name_short: 東泥
     sector: 水泥
@@ -254,6 +257,9 @@ tickers:
     - text: 大成
       match_mode: name_with_context
       priority: 2
+      blocked_after:
+      - 鋼
+      - 長
   '1213':
     name_short: 大飲
     sector: 食品
@@ -358,6 +364,11 @@ tickers:
     - text: 台塑
       match_mode: name_with_context
       priority: 2
+      blocked_after:
+      - 三寶
+      - 九寶
+      - 五寶
+      - 四寶
   '1303':
     name_short: 南亞
     sector: 塑膠
@@ -369,6 +380,10 @@ tickers:
     - text: 南亞
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 東南
+      blocked_after:
+      - 科
   '1304':
     name_short: 台聚
     sector: 塑膠
@@ -574,6 +589,14 @@ tickers:
     - text: 和大
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 溫
+      blocked_after:
+      - 家
+      - 廠
+      - 戶
+      - 樓
+      - 盤
   '1402':
     name_short: 遠東新
     sector: 紡織
@@ -684,6 +707,9 @@ tickers:
     - text: 福懋
       match_mode: name_with_context
       priority: 2
+      blocked_after:
+      - 油
+      - 科
   '1432':
     name_short: 大魯閣
     sector: 運動休閒
@@ -1007,6 +1033,8 @@ tickers:
     - text: 華城
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 京
   '1526':
     name_short: 日馳
     sector: 電機機械
@@ -1115,6 +1143,9 @@ tickers:
     - text: 宏泰
       match_mode: name_with_context
       priority: 2
+      blocked_after:
+      - 人
+      - 人壽
   '1614':
     name_short: 三洋電
     sector: 電器電纜
@@ -1214,6 +1245,8 @@ tickers:
     - text: 南光
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 陳
   '1760':
     name_short: 寶齡富錦
     sector: 生技
@@ -1236,6 +1269,8 @@ tickers:
     - text: 中化生
       match_mode: name_with_context
       priority: 3
+      blocked_after:
+      - 產
   '1783':
     name_short: 和康生
     sector: 生技
@@ -1324,6 +1359,9 @@ tickers:
     - text: 國化
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 中
+      - 美
   '1714':
     name_short: 和桐
     sector: 化學
@@ -1412,6 +1450,10 @@ tickers:
     - text: 和成
       match_mode: name_with_context
       priority: 2
+      blocked_after:
+      - 功
+      - 本
+      - 長
   '1817':
     name_short: 凱撒衛
     sector: 玻璃
@@ -1842,6 +1884,8 @@ tickers:
     - text: 中台
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 其
   '6944':
     name_short: 兆聯實業
     sector: 綠能環保
@@ -1930,6 +1974,8 @@ tickers:
     - text: 厚生
       match_mode: name_with_context
       priority: 2
+      blocked_after:
+      - 勞
   '2108':
     name_short: 南帝
     sector: 橡膠
@@ -2008,15 +2054,17 @@ tickers:
       match_mode: name_with_context
       priority: 2
       blocked_after:
-      - 市場
-      - 國家
-      - 經濟體
-      - 產業
       - 債
-      - 電商
-      - 科技
+      - 化學
+      - 國家
+      - 市
+      - 市場
       - 應用
+      - 產業
+      - 科技
       - 經濟
+      - 經濟體
+      - 電商
       blocked_before:
       - '-'
       - －
@@ -2042,6 +2090,8 @@ tickers:
     - text: 榮運
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 長
   '2608':
     name_short: 嘉里大榮
     sector: 航運
@@ -2136,6 +2186,8 @@ tickers:
     - text: 台積
       match_mode: name
       priority: 2
+      blocked_before:
+      - 全
   '2337':
     name_short: 旺宏
     sector: 半導體
@@ -2169,6 +2221,14 @@ tickers:
     - text: 台亞
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 平
+      - 網購平
+      - 電商平
+    - text: 光磊
+      match_mode: name_with_context
+      priority: 2
+      note: 2021 年更名前的舊簡稱（光磊科技 → 台亞半導體）；宇宙清單記的是現名
   '2342':
     name_short: 茂矽
     sector: 半導體
@@ -2213,6 +2273,11 @@ tickers:
     - text: 金寶
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 泰
+      blocked_after:
+      - -D
+      - -DR
   '2317':
     name_short: 鴻海
     sector: 其他電子
@@ -2565,6 +2630,10 @@ tickers:
     - text: 華經
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 中
+      blocked_after:
+      - 濟
   '2471':
     name_short: 資通
     sector: 資訊服務
@@ -2576,6 +2645,8 @@ tickers:
     - text: 資通
       match_mode: name_with_context
       priority: 2
+      blocked_after:
+      - 訊
   '2480':
     name_short: 敦陽科
     sector: 資訊服務
@@ -2829,6 +2900,9 @@ tickers:
     - text: 美食
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 來
+      - 漢來
     - text: 美食-KY
       match_mode: name_with_context
       priority: 5
@@ -2964,6 +3038,11 @@ tickers:
     - text: 欣欣
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 一片
+      - 片
+      blocked_after:
+      - 向榮
   '2903':
     name_short: 遠百
     sector: 貿易百貨
@@ -3027,6 +3106,8 @@ tickers:
     - text: 統領
       match_mode: name_with_context
       priority: 2
+      blocked_before:
+      - 大
   '2911':
     name_short: 麗嬰房
     sector: 貿易百貨

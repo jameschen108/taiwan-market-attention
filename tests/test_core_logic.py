@@ -16,7 +16,8 @@ import pytest
 from src.config import load_settings, load_universe_config
 from src.ptt.ingest_jsonl import Article, Comment, _as_bool, _parse_article
 from src.ptt.parse import effort_tier, has_comment_metadata, parse_title
-from src.ptt.transform import _rows_for_article, count_codes
+from src.ptt.transform import (_rows_for_article, count_codes,
+                               count_table_rows)
 from src.universe.name_matching import build_matcher, normalize, strip_ptt_template
 
 
@@ -96,6 +97,52 @@ def test_code_beats_name_as_evidence(matcher):
     assert matcher.match("[標的] 2330 台積電 買進", "") == {"2330": "code"}
 
 
+@pytest.mark.parametrize("text,ticker,why", [
+    ("案1202、案1203,案1208 股價", "1203", "COVID 病例編號"),
+    ("Shopify 高點 1762 現價 544", "1762", "股價"),
+    ("M.2 2230 和非常短的 M.2 1216 插槽", "1216", "PCB 封裝規格"),
+    ("Sent from JPTT on my Vivo 1907", "1907", "手機型號"),
+    ("惟1110機服役期間,發現機 股價", "1110", "飛機機尾號"),
+    ("3.合晶 1339 3.創惟 -1346", "1339", "名稱式排行表的金額欄"),
+])
+def test_code_lookalikes_are_rejected(matcher, text, ticker, why):
+    """v2 機器抽驗導出：四位數在這些語境中不是證券代號。"""
+    assert ticker not in matcher.match(text, ""), why
+
+
+@pytest.mark.parametrize("text,ticker,why", [
+    ("美國晶片製造業沒有擴張和成功所需要 股價", "1810", "和＋成功"),
+    ("等於放空台積電和大盤 股價", "1536", "和＋大盤"),
+    ("就和大戶佈的籌碼走 股價", "1536", "和＋大戶"),
+    ("當輝瑞的日舒缺貨後,中化生產的 股價", "1762", "中化＋生產"),
+    ("股市又會開始欣欣向榮 股價", "2901", "成語"),
+    ("偕同經銷夥伴於全台積極布建充電 股價", "2330", "全台＋積極"),
+    ("長榮運價跌一個多月 股價", "2607", "長榮＋運價"),
+    ("持續推動越南、新興化學品產銷 股價", "2605", "普通詞"),
+    ("網購平台亞馬遜 股價 大漲", "2340", "平台＋亞馬遜"),
+    ("京華城改建案 股價 大漲", "1519", "京華城案"),
+    ("陳南光再撰文開砲 股價", "1752", "人名"),
+    ("泰金寶9105 DR 股價", "2312", "泰金寶-DR 是 9105"),
+])
+def test_word_boundary_and_extension_blocks(matcher, text, ticker, why):
+    """v2 機器抽驗與語料延伸剖析導出的阻擋規則。"""
+    assert ticker not in matcher.match(text, ""), why
+
+
+@pytest.mark.parametrize("text,ticker", [
+    ("和成 股價 漲停", "1810"), ("和大 股價 漲停", "1536"),
+    ("中化生 股價 漲停", "1762"), ("欣欣 股價 漲停", "2901"),
+    ("台積電 股價 漲停", "2330"), ("榮運 股價 漲停", "2607"),
+    ("新興 股價 漲停", "2605"), ("台亞 股價 漲停", "2340"),
+    ("華城 股價 漲停", "1519"), ("金寶 股價 漲停", "2312"),
+    ("福懋 股價 漲停", "1434"), ("宏泰 股價 漲停", "1612"),
+    ("南光 股價 漲停", "1752"), ("台塑 股價 漲停", "1301"),
+])
+def test_blocking_rules_do_not_kill_the_real_thing(matcher, text, ticker):
+    """阻擋規則不得把本尊一起擋掉——這是加規則最容易犯的錯。"""
+    assert ticker in matcher.match(text, "")
+
+
 def test_strip_template_and_normalize():
     assert "2330" not in strip_ptt_template("(例 2330 台積電)")
     assert normalize("（全形）　空白") == "(全形) 空白"
@@ -120,7 +167,7 @@ def test_comments_inherit_article_tickers(matcher):
     """留言繼承母文章的 ticker，不對留言文字另行比對（PROJECT.md §4.4）。"""
     art = _article("2330 台積電 買進 與 1101 台泥 股價", n_comments=3)
     arows, crows = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
-                                     source="pttcc", want_comments=True)
+                                     max_table_rows=15, source="pttcc", want_comments=True)
     tickers = {r["ticker"] for r in arows}
     assert tickers == {"2330", "1101"}
     assert len(crows) == 3 * len(tickers)
@@ -132,15 +179,15 @@ def test_bulk_listing_flag_propagates_to_comments(matcher):
     # 真實的程式選股輸出是「代號 簡稱」成對，不是一串裸數字——一串裸數字會（正確地）
     # 被排行表欄位偵測擋掉，拿來當 bulk 的測資等於測錯規則。
     listing = "\n".join([
-        "2330 台積電 買進", "1101 台泥 買進", "1102 亞泥 買進", "1103 嘉泥 買進",
-        "1104 環泥 買進", "1108 幸福 買進", "1109 信大 買進", "1201 味全 買進",
-        "1203 味王 買進", "1210 大成 買進", "1216 統一 買進", "1217 愛之味 買進",
-        "1218 泰山 買進", "1219 福壽 買進", "1220 台榮 買進", "1225 福懋油 買進",
-        "1227 佳格 買進",
+        "1101 台泥 買進", "1102 亞泥 買進", "1103 嘉泥 買進", "1104 環泥 買進",
+        "1108 幸福 買進", "1109 信大 買進", "1110 東泥 買進", "1201 味全 買進",
+        "1203 味王 買進", "1210 大成 買進", "1213 大飲 買進", "1215 卜蜂 買進",
+        "1216 統一 買進", "1217 愛之味 買進", "1218 泰山 買進", "1219 福壽 買進",
+        "1220 台榮 買進", "1301 台塑 買進", "1304 台聚 買進",
     ])
     art = _article(listing, n_comments=2)
     arows, crows = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
-                                     source="pttcc", want_comments=True)
+                                     max_table_rows=15, source="pttcc", want_comments=True)
     assert arows[0]["n_tickers_in_article"] > 15
     assert all(r["is_bulk_listing"] for r in arows)
     assert crows and all(r["is_bulk_listing"] for r in crows)
@@ -155,7 +202,7 @@ def test_bulk_detected_by_total_codes_even_when_few_are_in_universe(matcher):
     outside = " ".join(f"{8000+i} 某公司 買超" for i in range(20))
     art = _article(f"2330 台積電 買超\n1101 台泥 買超\n{outside}", n_comments=2)
     arows, crows = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
-                                     source="pttcc", want_comments=True)
+                                     max_table_rows=15, source="pttcc", want_comments=True)
     assert arows[0]["n_tickers_in_article"] <= 15      # 宇宙內命中很少
     assert arows[0]["n_codes_in_article"] > 15         # 但全文代號很多
     assert all(r["is_bulk_listing"] for r in arows)    # 仍須標記
@@ -171,10 +218,41 @@ def test_bulk_rule_is_a_union_not_a_replacement(matcher):
                        "第一銅", "中鋼構", "匯僑設計"])
     art = _article(f"{names} 股價 都漲停", n_comments=1)
     arows, _ = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
-                                 source="pttcc", want_comments=True)
+                                 max_table_rows=15, source="pttcc", want_comments=True)
     assert arows[0]["n_codes_in_article"] == 0         # 一個代號都沒有
     assert arows[0]["n_tickers_in_article"] > 15
     assert all(r["is_bulk_listing"] for r in arows)
+
+
+def test_name_only_ranking_table_is_detected(matcher):
+    """只印公司名、不印代號的買賣超排行表——前兩個 bulk 判準都抓不到。
+
+    v2 機器抽驗中這類佔誤配的 39%（`audit/adjudication/README.md`）。
+    """
+    table = "\n".join([
+        "外資買超 外資賣超",
+        "1.合晶 5795 1.富喬 -6714", "2.聚和 2253 2.榮剛 -5320",
+        "3.原相 1216 3.僑威 -2742", "4.加高 1054 4.鈺創 -2005",
+        "5.漢磊 1000 5.華容 -1852", "6.台聚 376 6.裕民 -331",
+        "7.台橡 944 7.宏碁 1677", "8.中鋼 840 8.金像電 1389",
+        "9.亞聚 695 9.亞泥 809", "10.永豐餘 793 10.新光鋼 479",
+    ])
+    art = _article(table, n_comments=1)
+    assert count_codes("", table) <= 15          # 代號判準抓不到
+    assert count_table_rows("", table) > 15      # 表格列判準抓得到
+    arows, crows = _rows_for_article(art, matcher, max_tickers=15, max_codes=15,
+                                     max_table_rows=15, source="pttcc",
+                                     want_comments=True)
+    assert arows and all(r["is_bulk_listing"] for r in arows)
+    assert crows and all(r["is_bulk_listing"] for r in crows)
+
+
+def test_prose_post_is_not_mistaken_for_a_table():
+    """散文型貼文的「名稱＋數字」對數必須遠低於門檻，否則會誤殺真實關注度。"""
+    target_post = ("1. 標的: 2330 台積電\n2. 分類:多\n"
+                   "3. 分析/正文: 台積電先進製程領先 目標價 800 元\n"
+                   "成本在 650 持有 10 張")
+    assert count_table_rows("", target_post) < 15
 
 
 def test_count_codes_ignores_ptt_template():
@@ -185,7 +263,7 @@ def test_count_codes_ignores_ptt_template():
 
 def test_unmatched_article_produces_no_rows(matcher):
     art = _article("今天天氣很好，沒有提到任何個股")
-    assert _rows_for_article(art, matcher, 15, 15, "pttcc", True) == ((), ())
+    assert _rows_for_article(art, matcher, 15, 15, 15, "pttcc", True) == ((), ())
 
 
 def test_missing_comment_timestamp_stays_missing(matcher):
@@ -197,7 +275,7 @@ def test_missing_comment_timestamp_stays_missing(matcher):
         timestamp=art.timestamp, header_date=None, author_id="p", author_nickname="",
         ip="", location="", meta_recovered=False, n_push=1, n_boo=0, n_arrow=0,
         n_comments=1, comments=(blank,), source_file="t.jsonl")
-    _, crows = _rows_for_article(art2, matcher, 15, 15, "pttcc", True)
+    _, crows = _rows_for_article(art2, matcher, 15, 15, 15, "pttcc", True)
     assert crows and crows[0]["timestamp"] is None
     assert crows[0]["article_timestamp"] == art.timestamp
 

@@ -23,8 +23,8 @@ CONTEXT = 120
 MAX_SPANS = 3
 
 
-def build(source: str, s: dict) -> pd.DataFrame:
-    sample = pd.read_csv(AUDIT / f"ptt_review_sample_{source}.csv", dtype={"ticker": str})
+def build(source: str, s: dict, tag: str = "") -> pd.DataFrame:
+    sample = pd.read_csv(AUDIT / f"ptt_review_sample_{source}{tag}.csv", dtype={"ticker": str})
     cfg = load_universe_config()
     matcher = build_matcher(cfg)
     names = {str(t): [v["text"] for v in spec.get("variants", [])]
@@ -79,7 +79,7 @@ def build(source: str, s: dict) -> pd.DataFrame:
 
     store.close()
     out = pd.DataFrame(rows)
-    path = AUDIT / f"ptt_review_evidence_{source}.csv"
+    path = AUDIT / f"ptt_review_evidence_{source}{tag}.csv"
     out.to_csv(path, index=False)
     print(f"判讀證據 {len(out)} 筆 → {path.relative_to(ROOT)}")
     print(f"  無法定位命中片段 {int((out['n_hits'] == 0).sum())} 筆")
@@ -91,8 +91,9 @@ def build(source: str, s: dict) -> pd.DataFrame:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="產生判讀證據")
     ap.add_argument("--source", default="pttcc")
+    ap.add_argument("--tag", default="")
     args = ap.parse_args(argv)
-    build(args.source, load_settings())
+    build(args.source, load_settings(), tag=args.tag)
     return 0
 
 

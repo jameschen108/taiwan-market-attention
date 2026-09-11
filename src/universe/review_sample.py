@@ -49,7 +49,8 @@ def _ticker_tiers(matches: pd.DataFrame, s: dict) -> pd.Series:
 
 
 def draw(source: str, s: dict, n_per_tier: int = 50, n_per_collision: int = 20,
-         n_per_mode: int = 50, n_bulk: int = 40) -> pd.DataFrame:
+         n_per_mode: int = 50, n_bulk: int = 40, seed: int = SEED,
+         tag: str = "") -> pd.DataFrame:
     matches = pd.read_parquet(INTERIM / f"ptt_matches_{source}.parquet")
     lo, hi = s["sample"]["main_start"], f"{s['sample']['main_end']} 23:59:59"
     matches = matches[(matches["timestamp"] >= lo) & (matches["timestamp"] <= hi)]
@@ -62,7 +63,7 @@ def draw(source: str, s: dict, n_per_tier: int = 50, n_per_collision: int = 20,
     matches = matches.assign(collision_group=matches["ticker"].map(collision_of))
 
     analysis = matches[~matches["is_bulk_listing"]]
-    rng = SEED
+    rng = seed
     picks: list[pd.DataFrame] = []
 
     def take(df: pd.DataFrame, n: int, label: str) -> None:
@@ -86,7 +87,7 @@ def draw(source: str, s: dict, n_per_tier: int = 50, n_per_collision: int = 20,
     out = (pd.concat(picks, ignore_index=True)
            .drop_duplicates(subset=["article_id", "ticker", "stratum"]))
     AUDIT.mkdir(exist_ok=True)
-    path = AUDIT / f"ptt_review_sample_{source}.csv"
+    path = AUDIT / f"ptt_review_sample_{source}{tag}.csv"
     out.to_csv(path, index=False)
     print(f"\n抽樣 {len(out)} 筆 → {path.relative_to(ROOT)}")
     print(f"  分析用（非 bulk）{int((out['stratum'] != 'bulk').sum())} 筆；"
@@ -98,8 +99,11 @@ def draw(source: str, s: dict, n_per_tier: int = 50, n_per_collision: int = 20,
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="歸屬正確率抽驗：分層抽樣")
     ap.add_argument("--source", default="pttcc")
+    ap.add_argument("--seed", type=int, default=SEED)
+    ap.add_argument("--tag", default="",
+                    help="輸出檔名後綴；修正後的獨立重抽用 --tag _round2")
     args = ap.parse_args(argv)
-    draw(args.source, load_settings())
+    draw(args.source, load_settings(), seed=args.seed, tag=args.tag)
     return 0
 
 

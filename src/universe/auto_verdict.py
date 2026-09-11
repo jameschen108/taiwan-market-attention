@@ -101,8 +101,8 @@ def _leak_texts(leaks: pd.DataFrame) -> dict[str, list[str]]:
     return d
 
 
-def adjudicate(source: str, s: dict, leaks: pd.DataFrame) -> pd.DataFrame:
-    ev = pd.read_csv(AUDIT / f"ptt_review_evidence_{source}.csv", dtype={"ticker": str})
+def adjudicate(source: str, s: dict, leaks: pd.DataFrame, tag: str = "") -> pd.DataFrame:
+    ev = pd.read_csv(AUDIT / f"ptt_review_evidence_{source}{tag}.csv", dtype={"ticker": str})
     leak_by_ticker = _leak_texts(leaks)
 
     verdicts, reasons, priority = [], [], []
@@ -140,7 +140,7 @@ def adjudicate(source: str, s: dict, leaks: pd.DataFrame) -> pd.DataFrame:
     ev["review_priority"] = priority
     ev = ev.sort_values(["review_priority", "stratum"]).reset_index(drop=True)
 
-    path = AUDIT / f"ptt_review_adjudicated_{source}.csv"
+    path = AUDIT / f"ptt_review_adjudicated_{source}{tag}.csv"
     ev.to_csv(path, index=False)
 
     analysis = ev[ev["stratum"] != "bulk"]
@@ -157,12 +157,13 @@ def adjudicate(source: str, s: dict, leaks: pd.DataFrame) -> pd.DataFrame:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="抽驗的自動初判")
     ap.add_argument("--source", default="pttcc")
+    ap.add_argument("--tag", default="")
     args = ap.parse_args(argv)
     s = load_settings()
     print("[1] 找出仍會汙染的延伸實體（以語料真實上下文測試）")
     leaks = leaking_extensions(args.source, resolve(s["ptt"]["root"]))
     print("\n[2] 逐筆自動初判")
-    adjudicate(args.source, s, leaks)
+    adjudicate(args.source, s, leaks, tag=args.tag)
     return 0
 
 

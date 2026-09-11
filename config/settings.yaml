@@ -65,8 +65,13 @@ attention:
   #                            只命中 13 檔」的排行表——只數宇宙內的話它會完全逃過，
   #                            而「是不是資料傾印」是貼文自己的性質，不該取決於我們
   #                            抽了哪 267 檔。
+  #   max_table_rows_per_article  「中文名 ＋ 空白 ＋ 數字」的出現次數。只印公司名
+  #                            不印代號的買賣超／投信排行表，前兩個判準都抓不到；
+  #                            v2 機器抽驗中這類佔誤配的 39%。門檻與前兩者同為 15，
+  #                            刻意不另行調參。
   max_tickers_per_article: 15
   max_codes_per_article: 15
+  max_table_rows_per_article: 15
   exclude_bulk_listing: true
   bulk_listing_sensitivity_grid: [5, 10, 15, 20, 30, 999]
 

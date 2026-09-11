@@ -24,11 +24,11 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 |---|---|
 | P0 語料落地與完整性稽核 | ✅ 完成，見 [`audit/P0_corpus_integrity.md`](audit/P0_corpus_integrity.md) |
 | P1 讀取層（雙來源並存） | ✅ 完成 |
-| P2 配對層 | ✅ 程式完成，見 [`audit/P2_matching.md`](audit/P2_matching.md)；🚧 歸屬正確率抽驗已抽樣＋初判，待人工覆核 |
+| P2 配對層 | ✅ 完成。歸屬正確率**機器抽驗**兩輪：修正前 93.5% → 修正後 **95.5%**，見 [`audit/adjudication/README.md`](audit/adjudication/README.md) |
 | P3 特徵層 | ✅ 完成，面板 **64,980 列 × 260 檔 × 260 週**，見 [`audit/P3_panel.md`](audit/P3_panel.md) |
 | P3.5 台股制度資料 | ⬜ 未開始：處置股清單、TWTB4U 當沖（`LIMITATIONS.md` §12） |
 | P4 分析層 | ⬜ 未開始 |
-| P5 稽核／測試／文件 | 🚧 **82 項測試通過**；`expected_v2.py` 未建 |
+| P5 稽核／測試／文件 | 🚧 **117 項測試通過**；`expected_v2.py` 未建 |
 
 ### P2 的核心結果
 
@@ -50,7 +50,7 @@ Table 2 相關性）。過程中回退了兩項誤改——異常值基準與報
 同時新增四條限制：§11（主要自變數在建構上接近二元）、§12（處置股／當沖／漲跌停
 三個台股制度混淆）、§13（原論文的建構細節不得靠推論補）、§14（三方對照需補 A′）。
 
-**在歸屬正確率重抽驗完成前，任何係數都不得引用**（`LIMITATIONS.md` §6.3）。
+歸屬正確率重抽驗**已完成**（機器抽驗，95.5%）。判讀者是 LLM 而非人工，殘餘誤差集中在 `name_with_context` 模式（87.9%），限制見 `LIMITATIONS.md` §6.3。
 
 ---
 
