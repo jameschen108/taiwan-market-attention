@@ -21,10 +21,15 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 |---|---|
 | P0 語料落地與完整性稽核 | ✅ 完成，見 [`audit/P0_corpus_integrity.md`](audit/P0_corpus_integrity.md) |
 | P1 讀取層（雙來源並存） | ✅ 完成 |
-| P2 配對層 | 🚧 程式完成，歸屬正確率重抽驗未做 |
+| P2 配對層 | 🚧 pttcc 跑完（122,562 文章列／1,399 萬留言列），見 [`audit/P2_matching.md`](audit/P2_matching.md)；歸屬正確率重抽驗未做 |
 | P3 特徵層 | 🚧 關注度與窗口完成，面板組裝未做 |
 | P4 分析層 | ⬜ 未開始 |
 | P5 稽核／測試／文件 | 🚧 46 項測試通過；`expected_v2.py` 未建 |
+
+### P2 的核心結果
+
+以母文章時戳指派窗口（v1 唯一能做的事）會**低估週末關注度 22.4%**，且位移是
+單向的——平日發文→週末留言是反向的 3.9 倍。見 [`audit/P2_matching.md`](audit/P2_matching.md) §3。
 | P6 交付 | ⬜ 未開始 |
 
 **在歸屬正確率重抽驗完成前，任何係數都不得引用**（`LIMITATIONS.md` §6.3）。
