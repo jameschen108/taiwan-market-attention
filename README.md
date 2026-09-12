@@ -13,7 +13,7 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 |---|---|
 | [`PROJECT.md`](PROJECT.md) | **研究設計與變數定義的單一真相來源**。程式與它不一致時改程式 |
 | [`LIMITATIONS.md`](LIMITATIONS.md) | 已知限制。引用任何結果都必須同時引用本文件 |
-| [`FINDINGS.md`](FINDINGS.md) | 主要發現。**骨架**：**§3–§8 已成稿**（設計／主結果／窗口／機制／論文對照／歸因），§1、§2、§9 待寫 |
+| [`FINDINGS.md`](FINDINGS.md) | **主要發現**（九節成稿）。引用結果前先讀它的「全文適用的四條紀律」 |
 | [`REPLICATION.md`](REPLICATION.md) | 從原始資料重建每一張表。每條指令都實跑驗證過 |
 | [`docs/PLAN_V2.md`](docs/PLAN_V2.md) | v2 的工作計劃（參考，不是規格） |
 | [`audit/`](audit/) | 全部稽核產出 |
@@ -31,7 +31,7 @@ v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用*
 | P3.5 台股制度資料 | ✅ 完成：處置股 156 筆／64 檔、當沖 338,194 列／1,458 交易日，見 [`audit/P3_5_institutions.md`](audit/P3_5_institutions.md) |
 | P4 分析層 | ✅ 完成：H1／H2／H3／H5／H6／H7／投資組合／T13／T14／T15 跑在 A′・B・C 三個規格上，H4 明確 SKIP，見 [`audit/P4_analysis.md`](audit/P4_analysis.md) |
 | P5 稽核／測試／文件 | ✅ **327 項測試通過**；`expected_v2.py` 已凍結 154 格；`LIMITATIONS.md` 同步至 §17；[`REPLICATION.md`](REPLICATION.md) 建立（21 個 CLI 逐條實跑驗證） |
-| P6 交付 | 🚧 [`FINDINGS.md`](FINDINGS.md) 骨架完成（B 版機制主線，9 節）；**§3–§8 已成稿**，僅 §1、§2、§9 待寫 |
+| P6 交付 | ✅ [`FINDINGS.md`](FINDINGS.md) **九節全部成稿**（機制主線）；每節數字皆程式化對回 `output/` |
 
 ### P4 的三個核心結果
 
