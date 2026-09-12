@@ -226,6 +226,12 @@ v2 的結果若與 v1 不同，有兩個互相混淆的原因。用三個規格�
 - **測試分兩類**：邏輯不變量（窗口指派、週對齊、權值還原、碰撞消解）不動；
   寫死數字的測試（文章數、面板列數、係數）抽到 `tests/expected_v2.py`，
   跑完 v2 後一次更新。v1 的 113 項測試**不得刪除**，改為以 `ptt.source` 參數化。
+
+> **已完成**：`tests/expected_v2.py` 由 `python3 -m src.audit_expected --freeze` 產生
+> （154 格：面板形狀、係數、投資組合、H7 事件與判讀、測度效度、T14 三段分解），
+> 不加 `--freeze` 只比對不寫檔。凍結檔記錄當時的 commit。
+> 結構不變量（非平衡、週軸連續、窗口相加等於整週）以 `spec` 參數化，跑在
+> **每一份已建的面板**上（`tests/test_specs.py`），不只 C。
 - `LIMITATIONS.md` 新增：H4 完全不可行、樣本期縮短、留言歸屬假設、
   新語料本身的選樣（ptt.cc 已刪文不可得）。
 - `README.md` / `PROJECT.md` / `REPLICATION.md` 同步。

@@ -6,6 +6,8 @@ A → A′ → B → C 的分解只有在**除了語料來源與期間之外什�
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from src.config import load_settings
@@ -120,3 +122,55 @@ def test_fit_handles_moderator_that_is_also_a_control():
     r = fit(d, "y", ["x", "m", "x__x__m"], ["m"], "重疊測試")
     assert r.status == "OK", r.note
     assert "x__x__m" in r.params
+
+
+# ------------------------------------------ 結構不變量：**每個**規格的面板都要過
+
+# `docs/PLAN_V2.md` §P5：「v1 的測試改為以 `ptt.source` 參數化」。下面這些不是
+# 數字，是任何一份面板都必須成立的結構性質——只驗 C 的話，A′ 或 B 壞掉不會有人知道。
+_BUILT = [s for s in ("C", "B", "A_prime", "pttweb_intersect")
+          if Path(f"data/processed/panel_{s}.parquet").exists()]
+
+
+@pytest.mark.parametrize("spec", _BUILT)
+def test_every_built_panel_holds_the_structural_invariants(spec):
+    import pandas as pd
+
+    from src.features.sessions import week_of
+
+    d = pd.read_parquet(f"data/processed/panel_{spec}.parquet")
+
+    # 非平衡且明確非平衡：上市前維持缺列，不補零
+    assert (d["week"] >= d["listing_date"].map(week_of)).all()
+    # ticker×week 唯一
+    assert not d.duplicated(subset=["ticker", "week"]).any()
+    # PTT 的零是真實的零——att_* 不得有缺值
+    for col in ("att_all", "att_weekday", "att_weekend"):
+        assert d[col].isna().sum() == 0, f"{spec} 的 {col} 有缺值"
+    # 週軸為 Sunday-anchored 且連續
+    weeks = pd.Series(sorted(d["week"].unique()))
+    assert (weeks.dt.weekday == 6).all(), f"{spec} 的週軸不是星期日錨定"
+    assert (weeks.diff().dropna() == pd.Timedelta(days=7)).all(), f"{spec} 的週軸有缺口"
+    # 窗口相加等於整週：切法不得漏掉或重複計數
+    assert (d["att_weekday"] + d["att_weekend"] == d["att_all"]).all()
+    assert (d["att_intraday"] + d["att_non_trading"] == d["att_all"]).all()
+
+
+@pytest.mark.parametrize("spec", _BUILT)
+def test_every_built_panel_respects_its_own_sample_window(spec):
+    """期間由規格決定，但**每一份都必須完整落在自己的窗內**（week_containment=full）。
+
+    A′ 的期間是 `specs` 的覆寫值；拿預設的 sample 去驗會誤判。
+    """
+    import pandas as pd
+
+    from src.config import load_settings
+
+    settings = load_settings()
+    # pttweb_intersect 不是 `specs` 裡的規格，它用預設 sample（＝B 的期間）
+    _, smp, _ = resolve_spec(settings, spec if spec in (settings.get("specs") or {})
+                             else None)
+    d = pd.read_parquet(f"data/processed/panel_{spec}.parquet", columns=["week"])
+    lo, hi = pd.Timestamp(smp["main_start"]), pd.Timestamp(smp["main_end"])
+    assert (d["week"] - pd.Timedelta(days=6)).min() >= lo
+    assert d["week"].max() <= hi
