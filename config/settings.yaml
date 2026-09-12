@@ -195,6 +195,34 @@ robustness:
     also_stratify: true                 # 另做高／低當沖分層
     blocks: ["H3a"]
 
+# PROJECT.md §6.7 的四方對照。每個規格只改**語料來源與期間**，其餘門檻一律沿用
+# 上面各節——這正是 A′ 存在的理由：A 是 v1 發表的結果（v1 的定義），A′ 是同一份
+# 舊語料、同一個全期，但跑 v2 的定義。沒有 A′，A→B 會同時混了期間效果與 §0.1 的
+# 四項測度修正。
+#
+#   A  → A′   測度定義效果（v2 的四項修正 ＋ bulk 三判準）
+#   A′ → B    期間效果
+#   B  → C    已刪文流失 ＋ 語料測度改變（LIMITATIONS.md §2 要求再拆兩欄）
+#
+# `python3 -m src.features.build --spec A_prime` 等於套用下表的 sample 覆寫。
+# 覆寫**只允許動 sample 區塊**，由 tests 守住。
+specs:
+  C:                                  # 主規格：新語料、主樣本期間
+    source: pttcc
+    sample: {}                        # 不覆寫，用 sample 區塊的預設
+  B:                                  # 舊語料、主樣本期間
+    source: pttweb
+    sample:
+      ptt_warmup_start: "2019-01-01"
+  A_prime:                            # 舊語料、全期、**v2 的定義**
+    source: pttweb
+    sample:
+      main_start: "2015-05-01"        # pttweb 封存的第一個完整月份
+      main_end: "2024-12-31"
+      ptt_warmup_start: "2015-04-27"  # 封存實得起點；不足 52 週者 tier 維持缺值
+  # 規格 A 不在此表：它是 v1 既有的發表結果，用 v1 的程式與定義產出，
+  # 本專案不重跑，逐項數字引自 v1 的 output/。
+
 validity:
   min_code_name_corr: 0.5
   manual_review_per_tier: 50

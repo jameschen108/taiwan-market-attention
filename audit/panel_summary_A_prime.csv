@@ -1,0 +1,2 @@
+spec,source,n_rows,n_tickers,n_weeks,rows_dropped_pre_listing,rows_dropped_warmup,first_week,last_week,n_dense_rows,n_sparse_rows,n_silent_rows,n_tier_missing,n_with_ret_next,n_with_ret_gap_next,n_incomplete_weeks,n_weeks_touching_price_limit,ret_definition,abn_baseline,n_with_roi_next,pct_zero_attention,n_disposition_weeks,mean_dt_ratio,mean_dt_value_ratio
+A_prime,pttweb,123333,260,504,11274,495,2015-05-10,2024-12-29,3693,54004,53633,12003,121957,120632,94,2978,open_to_close,mean,110969,0.8481,441,0.1258,0.126

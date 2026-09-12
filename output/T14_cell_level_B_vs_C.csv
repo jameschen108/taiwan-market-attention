@@ -1,0 +1,2 @@
+n_cells,att_all_corr,att_all_pct_identical,att_all_pct_identical_among_nonzero,att_all_pct_b_lower,att_all_pct_b_higher,att_weekend_corr,att_weekend_pct_identical,att_weekend_pct_identical_among_nonzero,att_weekend_pct_b_lower,att_weekend_pct_b_higher,abn_weekend_corr,sparsity_tier_pct_identical
+64980,0.9951,0.9477,0.7165,0.028,0.0243,0.9866,0.9842,0.6927,0.0082,0.0076,0.916,0.9595

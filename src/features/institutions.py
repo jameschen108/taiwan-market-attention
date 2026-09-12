@@ -24,6 +24,21 @@ import pandas as pd
 from .sessions import week_of
 
 
+def _coverage(path: Path, date_cols: tuple[str, ...]) -> tuple[pd.Timestamp, pd.Timestamp] | None:
+    """收集檔實際涵蓋的日期範圍。
+
+    **範圍外必須是缺值，不是零。** 把「該週沒有當沖／沒有被處置」與「那段期間根本
+    沒收資料」混為一談，會讓 A′（2015 起）的 2015–2018 看起來當沖率為 0——那是
+    假的零，而且會直接汙染以 `dt_ratio` 為控制變數的規格。
+    """
+    if not path.exists():
+        return None
+    d = pd.read_csv(path, usecols=list(date_cols), parse_dates=list(date_cols))
+    if d.empty:
+        return None
+    return d[list(date_cols)].min().min(), d[list(date_cols)].max().max()
+
+
 def disposition_weeks(path: Path, trading_days: set) -> pd.DataFrame:
     """把處置區間展開成 ticker × 週。
 
@@ -77,15 +92,25 @@ def attach(panel: pd.DataFrame, disposition_path: Path, day_trading_path: Path,
     status = {}
 
     disp = disposition_weeks(disposition_path, trading_days)
-    if disp.empty:
+    disp_cov = _coverage(disposition_path, ("start_date", "end_date"))
+    if disp.empty or disp_cov is None:
         panel["n_disposition_days"] = np.nan
         panel["is_disposition_week"] = np.nan
         panel["is_disposition_week_next"] = np.nan
         status["disposition_stocks"] = "PENDING：處置清單未收集"
     else:
         panel = panel.merge(disp, on=["ticker", "week"], how="left")
-        panel["n_disposition_days"] = panel["n_disposition_days"].fillna(0).astype(int)
-        panel["is_disposition_week"] = panel["n_disposition_days"] > 0
+        lo, hi = disp_cov
+        # 只在收集範圍內把未命中視為 0；範圍外維持缺值
+        in_cov = (panel["week"] >= lo) & (panel["week"] <= hi + pd.Timedelta(days=7))
+        panel["n_disposition_days"] = (
+            panel["n_disposition_days"].where(~in_cov, panel["n_disposition_days"].fillna(0)))
+        panel["is_disposition_week"] = (panel["n_disposition_days"] > 0).where(
+            panel["n_disposition_days"].notna())
+        n_out = int((~in_cov).sum())
+        if n_out:
+            status["disposition_coverage"] = (
+                f"{lo.date()} ~ {hi.date()}；面板中 {n_out:,} 列落在範圍外，維持缺值")
         # H3b 的應變數是**次週**的周轉率：污染它的是次週的處置，不是本週的。
         # 休市週不得跳過——與 ret_next 用同一條規則。
         panel = panel.sort_values(["ticker", "week"]).reset_index(drop=True)
@@ -96,16 +121,23 @@ def attach(panel: pd.DataFrame, disposition_path: Path, day_trading_path: Path,
         status["disposition_stocks"] = "AVAILABLE"
 
     dt = weekly_day_trading(day_trading_path)
-    if dt.empty:
+    dt_cov = _coverage(day_trading_path, ("date",))
+    if dt.empty or dt_cov is None:
         for c in ("dt_volume", "dt_buy_value", "dt_sell_value",
                   "n_dt_restricted_days", "dt_ratio", "dt_value", "dt_value_ratio"):
             panel[c] = np.nan
         status["day_trading"] = "PENDING：TWTB4U 未收集"
     else:
         panel = panel.merge(dt, on=["ticker", "week"], how="left")
+        lo, hi = dt_cov
+        in_cov = (panel["week"] >= lo) & (panel["week"] <= hi + pd.Timedelta(days=7))
         for c in ("dt_volume", "dt_buy_value", "dt_sell_value",
                   "n_dt_restricted_days"):
-            panel[c] = panel[c].fillna(0.0)
+            panel[c] = panel[c].where(~in_cov, panel[c].fillna(0.0))
+        n_out = int((~in_cov).sum())
+        if n_out:
+            status["day_trading_coverage"] = (
+                f"{lo.date()} ~ {hi.date()}；面板中 {n_out:,} 列落在範圍外，維持缺值")
         # 分母用行情面板的週成交股數；volume 為 0 或缺值時 ratio 維持缺值
         denom = panel["volume"].where(panel["volume"] > 0)
         panel["dt_ratio"] = (panel["dt_volume"] / denom).clip(upper=1.0)

@@ -117,9 +117,36 @@ def _weekly_market(daily: pd.DataFrame, settings: dict) -> pd.DataFrame:
     return agg
 
 
-def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFrame:
+def resolve_spec(settings: dict, spec: str | None) -> tuple[str, dict, str]:
+    """把 `specs.<name>` 的覆寫套到 sample 區塊上，回傳 (source, sample, 後綴)。
+
+    **覆寫只允許動 `sample`**：A′ 與 B、C 的差別只在語料來源與期間，其餘門檻
+    一律沿用鎖死的設定。允許動別的等於讓四方對照可以被調參，那就失去對照的意義
+    （PROJECT.md §6.7），由 `tests/test_specs.py` 守住。
+    """
+    if spec is None:
+        return settings["ptt"]["source"], dict(settings["sample"]), ""
+    specs = settings.get("specs") or {}
+    if spec not in specs:
+        raise ValueError(f"未知規格 {spec!r}；可用：{sorted(specs)}")
+    cfg = specs[spec]
+    illegal = set(cfg) - {"source", "sample"}
+    if illegal:
+        raise ValueError(f"規格 {spec} 只允許覆寫 source 與 sample，多了：{sorted(illegal)}")
+    smp = {**settings["sample"], **(cfg.get("sample") or {})}
+    return cfg["source"], smp, f"_{spec}"
+
+
+def build_panel(source: str = "pttcc", with_comments: bool = True,
+                spec: str | None = None) -> pd.DataFrame:
     settings = load_settings()
-    smp = settings["sample"]
+    if spec is not None:
+        source, smp, spec_suffix = resolve_spec(settings, spec)
+        with_comments = source == "pttcc"
+        print(f"[規格 {spec}] source={source}  "
+              f"{smp['main_start']} ~ {smp['main_end']}  warmup={smp['ptt_warmup_start']}")
+    else:
+        smp, spec_suffix = dict(settings["sample"]), ""
     exclude_bulk = bool(settings["attention"]["exclude_bulk_listing"])
 
     uni = pd.read_csv(ROOT / "data" / "external" / "universe.csv", dtype={"ticker": str})
@@ -261,7 +288,7 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
     panel = panel.reset_index(drop=True)
     print(f"  裁掉暖機期 {n_with_warmup - len(panel):,} 列")
 
-    suffix = "" if source == "pttcc" else f"_{source}"
+    suffix = spec_suffix or ("" if source == "pttcc" else f"_{source}")
     PROCESSED.mkdir(parents=True, exist_ok=True)
     panel.to_parquet(PROCESSED / f"panel{suffix}.parquet", index=False)
     panel[panel["sparsity_tier"] == "dense"].to_parquet(
@@ -282,6 +309,7 @@ def build_panel(source: str = "pttcc", with_comments: bool = True) -> pd.DataFra
     ).to_csv(AUDIT / f"model_status{suffix}.csv", index=False)
 
     pd.DataFrame([{
+        "spec": spec or "default",
         "source": source,
         "n_rows": len(panel),
         "n_tickers": panel["ticker"].nunique(),
@@ -319,8 +347,11 @@ def main() -> None:
     import argparse
     ap = argparse.ArgumentParser(description="建立 ticker×week 面板")
     ap.add_argument("--source", default="pttcc")
+    ap.add_argument("--spec", default=None,
+                    help="PROJECT.md §6.7 的四方對照規格：C / B / A_prime。"
+                         "指定後 --source 由規格決定。")
     args = ap.parse_args()
-    build_panel(args.source, with_comments=(args.source == "pttcc"))
+    build_panel(args.source, with_comments=(args.source == "pttcc"), spec=args.spec)
 
 
 if __name__ == "__main__":
