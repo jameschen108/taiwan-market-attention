@@ -1,0 +1,11 @@
+moderator,inference,interaction_t_next_week,interaction_t_cum2_8,verdict
+log_att_mean_level_52,twoway_2cluster,1.675,2.648,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+log_att_mean_level_52,firm_fe_1cluster,1.187,3.305,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+log_market_cap,twoway_2cluster,1.644,1.341,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+log_market_cap,firm_fe_1cluster,0.943,1.663,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+turnover,twoway_2cluster,2.069,0.896,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+turnover,firm_fe_1cluster,2.041,0.919,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+amihud,twoway_2cluster,-3.595,-1.274,交互項顯著為負 ＋ 後續週無反轉 → 支持資訊處理
+amihud,firm_fe_1cluster,-2.315,0.237,交互項顯著為負 ＋ 後續週無反轉 → 支持資訊處理
+foreign_holding_pct,twoway_2cluster,0.624,-0.128,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+foreign_holding_pct,firm_fe_1cluster,0.31,-0.343,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力

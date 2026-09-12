@@ -140,7 +140,10 @@ def fit(df: pd.DataFrame, y: str, xs: list[str], controls: list[str], name: str,
     tiers = (d["sparsity_tier"].value_counts().to_dict()
              if "sparsity_tier" in d.columns else {})
     panel = d.set_index(["ticker", "week"])
-    exog = panel[[*xs, *ctrl]]
+    # 自變數與控制變數可能重疊（H6 的調節變數本身就是控制變數之一）。不去重會
+    # 選出同名的兩欄，`exog[col]` 變成 DataFrame 而不是 Series，估計直接崩掉。
+    exog_cols = list(dict.fromkeys([*xs, *ctrl]))
+    exog = panel[exog_cols]
     exog = exog.loc[:, exog.std() > 0]          # 零變異欄位會使 FE 不可識別
     if exog.empty or not set(xs) & set(exog.columns):
         return ModelResult(name, "SKIPPED", inference, n_obs, n_ent, n_per,

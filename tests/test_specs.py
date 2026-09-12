@@ -93,3 +93,30 @@ def test_panel_ret_next_matches_the_declared_definition():
     d = pd.read_parquet(path, columns=["ret_next", "ret_oc_next", "ret_cc_next"]).dropna()
     assert np.allclose(d["ret_next"], d["ret_oc_next"])
     assert not np.allclose(d["ret_next"], d["ret_cc_next"])
+
+
+# ------------------------------------------------ 迴歸層的欄位契約
+
+def test_fit_handles_moderator_that_is_also_a_control():
+    """H6 的調節變數本身就是控制變數之一；自變數與控制重疊時不得產生重複欄位。
+
+    不去重會讓 `exog[col]` 回傳 DataFrame 而非 Series，估計崩在
+    `AttributeError: 'DataFrame' object has no attribute 'dtype'`。
+    """
+    import numpy as np
+    import pandas as pd
+    from src.analysis.regressions import fit
+
+    rng = np.random.default_rng(0)
+    n_t, n_w = 40, 60
+    rows = []
+    for t in range(n_t):
+        for w in range(n_w):
+            rows.append({"ticker": f"T{t:03d}", "week": pd.Timestamp("2020-01-05")
+                         + pd.Timedelta(weeks=w), "sparsity_tier": "sparse",
+                         "y": rng.normal(), "x": rng.normal(), "m": rng.normal()})
+    d = pd.DataFrame(rows)
+    d["x__x__m"] = d["x"] * d["m"]
+    r = fit(d, "y", ["x", "m", "x__x__m"], ["m"], "重疊測試")
+    assert r.status == "OK", r.note
+    assert "x__x__m" in r.params
