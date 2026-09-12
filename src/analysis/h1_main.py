@@ -96,11 +96,16 @@ def run(panel: pd.DataFrame, settings: dict) -> pd.DataFrame:
     if (rob.get("enabled") and rob.get("exclude_weeks_touching_limit")
             and "touched_price_limit_next" in d.columns):
         keep = d1[d1["touched_price_limit_next"].fillna(False) == False]  # noqa: E712
+        # 主檢定式與交易時段切法都要跑：缺口效果集中在非交易時段窗口，而漲跌停
+        # 截斷的正是缺口，兩者必須同時檢驗。
         for y, tag in RETURNS:
-            results += fit_both_inferences(
-                keep, y, ["abn_attention_weekday", "abn_attention_weekend"],
-                BASE_CONTROLS, f"H1-R 排除次週觸及漲跌停｜{tag}",
-                required_missing=missing)
+            for name, xs in (("H1-R 排除次週觸及漲跌停",
+                              ["abn_attention_weekday", "abn_attention_weekend"]),
+                             ("H1-R5 排除漲跌停・交易時段切法",
+                              ["abn_attention_intraday", "abn_attention_non_trading"])):
+                results += fit_both_inferences(keep, y, xs, BASE_CONTROLS,
+                                               f"{name}｜{tag}",
+                                               required_missing=missing)
     else:
         results += [ModelResult("H1-R 排除次週觸及漲跌停｜oc", "SKIPPED", inference=i,
                                 note="robustness.price_limit 未啟用或缺 "
