@@ -67,3 +67,29 @@ def test_b_and_c_share_the_same_window(settings):
     assert b_src != c_src
     for k in ("main_start", "main_end", "ptt_warmup_start"):
         assert b_smp[k] == c_smp[k]
+
+
+# ------------------------------------------------------- 應變數定義的契約
+
+def test_main_return_definition_is_open_to_close(settings):
+    """主規格的應變數必須是 open-to-close。
+
+    論文原文是「abnormal returns (Monday open to Friday close) of week t+1」
+    （Table 3a 註 p.16），v1 亦同。曾有一版改成 close_to_close 並在 PROJECT.md
+    留下殘留描述，已回退（LIMITATIONS.md §13）。這條測試防止它再漂回去。
+    """
+    assert settings["returns"]["main_definition"] == "open_to_close"
+    assert settings["returns"]["portfolio_definition"] == "open_to_close"
+
+
+def test_panel_ret_next_matches_the_declared_definition():
+    """面板的 ret_next 必須等於設定檔宣告的那個定義，不是另一個。"""
+    import numpy as np
+    from pathlib import Path
+    import pandas as pd
+    path = Path("data/processed/panel_C.parquet")
+    if not path.exists():
+        pytest.skip("面板未建")
+    d = pd.read_parquet(path, columns=["ret_next", "ret_oc_next", "ret_cc_next"]).dropna()
+    assert np.allclose(d["ret_next"], d["ret_oc_next"])
+    assert not np.allclose(d["ret_next"], d["ret_cc_next"])

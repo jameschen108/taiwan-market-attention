@@ -386,7 +386,7 @@ during the next week」），也與 v1 相同。§6.6 投資組合同樣用 `ret
 
 | 變數 | 定義 |
 |---|---|
-| `ret_next` | 下一個日曆週的 `ret_cc`（主規格） |
+| `ret_next` | 下一個日曆週的 `ret_oc`（**主規格**，＝ `ret_oc_next` 的別名，同論文與 v1） |
 | `ret_cc_next`／`ret_oc_next`／`ret_gap_next` | 三段各一，供 §6.1 的分解規格 |
 | `ret_fwd2` … `ret_fwd8` | t+2 ~ t+8 週報酬，供 H5 反轉檢定（§6.3） |
 | `non_inst_roi_next` | 次週非三大法人訂單失衡 |
@@ -459,7 +459,7 @@ Ret_{i,t+1} = α + β₁·AbnAtt_weekday + β₂·AbnAtt_weekend
               + γ'X + firm_FE + week_FE + ε
 ```
 
-`Ret_{i,t+1}` 為 `ret_next`（= `ret_cc_next`，§5.0）。**zero-base 虛擬變數逐窗口**，
+`Ret_{i,t+1}` 為 `ret_next`（= `ret_oc_next`，§5.0）。**zero-base 虛擬變數逐窗口**，
 與該式的自變數一一對應（§2.3）——只放一個 `att_all` 版蓋不住主要自變數。
 
 `X` 為 `regression.controls.available`：`log_market_cap`、`turnover`、`amihud`、
