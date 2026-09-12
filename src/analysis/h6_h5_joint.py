@@ -28,6 +28,10 @@ PROCESSED = ROOT / "data" / "processed"
 OUT = ROOT / "output"
 X = "abn_attention_weekend"
 
+#: §6.0：**每個主表另加一組以 `att_users_*`（獨立帳號數）為自變數的平行估計。**
+#: 舊語料的推文沒有帳號，A′／B 上此組必為 SKIPPED（§6.1b）。
+MEASURES = [("主測度 發文數", X), ("平行 獨立帳號數", "abn_attention_users_weekend")]
+
 #: §6.3 的調節變數。預期交互項顯著為負（效果在低覆蓋／小型／低流動性股更強）。
 MODERATORS = ["log_att_mean_level_52", "log_market_cap", "turnover", "amihud",
               "foreign_holding_pct"]
@@ -59,25 +63,23 @@ def _verdict(inter_t: float, rev_t: float, alpha_t: float = 1.96) -> str:
     return "交互項顯著為負，但後續週為顯著同向延續 → 兩條管道皆無法解釋，須另尋機制"
 
 
-def run(panel: pd.DataFrame, settings: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
-    missing = settings["regression"]["controls"]["required_but_missing"]
-    d = _add_cumulative(main_sample(add_derived(panel)))
-    mods = [m for m in MODERATORS if m in d.columns]
-    std = standardize_within(d, [X, *mods, *BASE_CONTROLS])
-
+def _one_measure(d: pd.DataFrame, x: str, label: str, mods: list[str],
+                 missing: list[str]) -> tuple[list, list[dict]]:
+    """單一關注度測度下的 H6 ＋ H5。兩者寫進同一組輸出，不提供拆開的介面。"""
+    std = standardize_within(d, [x, *mods, *BASE_CONTROLS])
     results, verdicts = [], []
     for m in mods:
-        inter = f"{X}__x__{m}"
-        std[inter] = std[X] * std[m]
-        xs = [X, m, inter]
+        inter = f"{x}__x__{m}"
+        std[inter] = std[x] * std[m]
+        xs = [x, m, inter]
         # H6：異質性
         h6 = fit_both_inferences(std, "ret_oc_next", xs, BASE_CONTROLS,
-                                 f"H6 {m}", required_missing=missing)
+                                 f"H6 {m}｜{label}", required_missing=missing)
         # H5：同一組自變數，應變數換成後續週累積 → 反轉檢定
         h5a = fit_both_inferences(std, "ret_cum2_4", xs, BASE_CONTROLS,
-                                  f"H5 {m}｜t+2..t+4", required_missing=missing)
+                                  f"H5 {m}｜t+2..t+4｜{label}", required_missing=missing)
         h5b = fit_both_inferences(std, "ret_cum2_8", xs, BASE_CONTROLS,
-                                  f"H5 {m}｜t+2..t+8", required_missing=missing)
+                                  f"H5 {m}｜t+2..t+8｜{label}", required_missing=missing)
         results += h6 + h5a + h5b
 
         for inf in ("twoway_2cluster", "firm_fe_1cluster"):
@@ -86,11 +88,31 @@ def run(panel: pd.DataFrame, settings: dict) -> tuple[pd.DataFrame, pd.DataFrame
             it = g6.tstats.get(inter, np.nan) if g6 and g6.status == "OK" else np.nan
             rt = g5.tstats.get(inter, np.nan) if g5 and g5.status == "OK" else np.nan
             verdicts.append({
-                "moderator": m, "inference": inf,
+                "measure": label, "moderator": m, "inference": inf,
                 "interaction_t_next_week": round(it, 3) if it == it else "",
                 "interaction_t_cum2_8": round(rt, 3) if rt == rt else "",
                 "verdict": _verdict(it, rt) if (it == it and rt == rt) else "無法估計",
             })
+    return results, verdicts
+
+
+def run(panel: pd.DataFrame, settings: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+    missing = settings["regression"]["controls"]["required_but_missing"]
+    d = _add_cumulative(main_sample(add_derived(panel)))
+    mods = [m for m in MODERATORS if m in d.columns]
+
+    results, verdicts = [], []
+    for label, x in MEASURES:
+        if x not in d.columns:
+            # 舊語料的推文無帳號 → 此測度**不可能存在**，不是樣本不足（§6.1b）
+            verdicts.append({"measure": label, "moderator": "（全部）",
+                             "inference": "", "interaction_t_next_week": "",
+                             "interaction_t_cum2_8": "",
+                             "verdict": f"此規格的語料無此測度（缺欄位：{x}）"})
+            continue
+        r, v = _one_measure(d, x, label, mods, missing)
+        results += r
+        verdicts += v
     return results_to_frame(results), pd.DataFrame(verdicts)
 
 

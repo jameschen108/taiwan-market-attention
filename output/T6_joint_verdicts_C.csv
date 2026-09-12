@@ -1,11 +1,21 @@
-moderator,inference,interaction_t_next_week,interaction_t_cum2_8,verdict
-log_att_mean_level_52,twoway_2cluster,1.675,2.648,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-log_att_mean_level_52,firm_fe_1cluster,1.187,3.305,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-log_market_cap,twoway_2cluster,1.644,1.341,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-log_market_cap,firm_fe_1cluster,0.943,1.663,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-turnover,twoway_2cluster,2.069,0.896,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-turnover,firm_fe_1cluster,2.041,0.919,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-amihud,twoway_2cluster,-3.595,-1.274,交互項顯著為負 ＋ 後續週無反轉 → 支持資訊處理
-amihud,firm_fe_1cluster,-2.315,0.237,交互項顯著為負 ＋ 後續週無反轉 → 支持資訊處理
-foreign_holding_pct,twoway_2cluster,0.624,-0.128,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-foreign_holding_pct,firm_fe_1cluster,0.31,-0.343,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+measure,moderator,inference,interaction_t_next_week,interaction_t_cum2_8,verdict
+主測度 發文數,log_att_mean_level_52,twoway_2cluster,1.675,2.648,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,log_att_mean_level_52,firm_fe_1cluster,1.187,3.305,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,log_market_cap,twoway_2cluster,1.644,1.341,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,log_market_cap,firm_fe_1cluster,0.943,1.663,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,turnover,twoway_2cluster,2.069,0.896,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,turnover,firm_fe_1cluster,2.041,0.919,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,amihud,twoway_2cluster,-3.595,-1.274,交互項顯著為負 ＋ 後續週無反轉 → 支持資訊處理
+主測度 發文數,amihud,firm_fe_1cluster,-2.315,0.237,交互項顯著為負 ＋ 後續週無反轉 → 支持資訊處理
+主測度 發文數,foreign_holding_pct,twoway_2cluster,0.624,-0.128,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,foreign_holding_pct,firm_fe_1cluster,0.31,-0.343,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,log_att_mean_level_52,twoway_2cluster,0.976,1.402,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,log_att_mean_level_52,firm_fe_1cluster,0.348,1.503,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,log_market_cap,twoway_2cluster,1.861,0.759,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,log_market_cap,firm_fe_1cluster,1.344,1.0,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,turnover,twoway_2cluster,-0.099,-0.187,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,turnover,firm_fe_1cluster,-0.674,-0.548,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,amihud,twoway_2cluster,-1.738,3.276,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,amihud,firm_fe_1cluster,-2.006,2.947,交互項顯著為負，但後續週為顯著同向延續 → 兩條管道皆無法解釋，須另尋機制
+平行 獨立帳號數,foreign_holding_pct,twoway_2cluster,1.446,-0.439,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,foreign_holding_pct,firm_fe_1cluster,1.439,-0.805,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力

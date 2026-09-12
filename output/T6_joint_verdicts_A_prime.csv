@@ -1,11 +1,12 @@
-moderator,inference,interaction_t_next_week,interaction_t_cum2_8,verdict
-log_att_mean_level_52,twoway_2cluster,1.441,1.787,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-log_att_mean_level_52,firm_fe_1cluster,0.968,2.267,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-log_market_cap,twoway_2cluster,0.792,1.164,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-log_market_cap,firm_fe_1cluster,0.156,1.644,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-turnover,twoway_2cluster,2.459,1.145,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-turnover,firm_fe_1cluster,2.757,1.139,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-amihud,twoway_2cluster,-5.127,-2.529,交互項顯著為負 ＋ 後續週顯著反轉 → 支持價格壓力
-amihud,firm_fe_1cluster,-1.956,0.055,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-foreign_holding_pct,twoway_2cluster,0.078,-0.706,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
-foreign_holding_pct,firm_fe_1cluster,-0.512,-0.511,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+measure,moderator,inference,interaction_t_next_week,interaction_t_cum2_8,verdict
+主測度 發文數,log_att_mean_level_52,twoway_2cluster,1.441,1.787,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,log_att_mean_level_52,firm_fe_1cluster,0.968,2.267,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,log_market_cap,twoway_2cluster,0.792,1.164,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,log_market_cap,firm_fe_1cluster,0.156,1.644,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,turnover,twoway_2cluster,2.459,1.145,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,turnover,firm_fe_1cluster,2.757,1.139,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,amihud,twoway_2cluster,-5.127,-2.529,交互項顯著為負 ＋ 後續週顯著反轉 → 支持價格壓力
+主測度 發文數,amihud,firm_fe_1cluster,-1.956,0.055,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,foreign_holding_pct,twoway_2cluster,0.078,-0.706,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+主測度 發文數,foreign_holding_pct,firm_fe_1cluster,-0.512,-0.511,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力
+平行 獨立帳號數,（全部）,,,,此規格的語料無此測度（缺欄位：abn_attention_users_weekend）

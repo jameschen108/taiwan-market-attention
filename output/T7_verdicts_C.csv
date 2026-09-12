@@ -1,0 +1,4 @@
+event,event_col,status,n_events_raw,n_events_matched,n_week_clusters,n_balanced,verdict
+all,is_initiation,OK,1362,611,184,4,匹配後事前差異仍顯著 → 反向因果未被消除，H7 在本設計下無法識別
+weekend,is_initiation_weekend,OK,217,101,78,3,事前差異已消除、事後亦無顯著差異 → 原始 CAR 型態可由價格動能完全解釋，H7 不成立
+comment,comment_is_initiation,OK,1288,588,180,4,匹配後事前差異仍顯著 → 反向因果未被消除，H7 在本設計下無法識別

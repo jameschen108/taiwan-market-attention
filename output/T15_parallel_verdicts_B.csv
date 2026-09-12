@@ -1,0 +1,8 @@
+source,moderator,inference,status,t_main,t_parallel,verdict_main,verdict_parallel,verdict_agrees
+T6,log_att_mean_level_52,twoway_2cluster,SKIPPED,1.649,,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力,（無）,
+T6,log_market_cap,twoway_2cluster,SKIPPED,1.141,,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力,（無）,
+T6,turnover,twoway_2cluster,SKIPPED,2.252,,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力,（無）,
+T6,amihud,twoway_2cluster,SKIPPED,-4.019,,交互項顯著為負 ＋ 後續週無反轉 → 支持資訊處理,（無）,
+T6,foreign_holding_pct,twoway_2cluster,SKIPPED,0.42,,交互項不顯著為負 → H6 未獲支持，反轉檢定不具判別力,（無）,
+T6,（全部）,twoway_2cluster,SKIPPED,,,（無）,（無）,
+T7,起始事件（DiD）,cluster 於事件週,SKIPPED,事件 619,,匹配後事前差異仍顯著 → 反向因果未被消除，H7 在本設計下無法識別,此規格的語料無此測度（缺欄位：comment_is_initiation）,

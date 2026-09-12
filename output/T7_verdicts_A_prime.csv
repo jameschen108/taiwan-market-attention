@@ -1,0 +1,4 @@
+event,event_col,status,n_events_raw,n_events_matched,n_week_clusters,n_balanced,verdict
+all,is_initiation,OK,2386,1214,361,4,事前差異已消除、事後亦無顯著差異 → 原始 CAR 型態可由價格動能完全解釋，H7 不成立
+weekend,is_initiation_weekend,OK,471,268,180,3,事前差異已消除、事後亦無顯著差異 → 原始 CAR 型態可由價格動能完全解釋，H7 不成立
+comment,comment_is_initiation,SKIPPED,0,0,0,0,此規格的語料無此測度（缺欄位：comment_is_initiation）

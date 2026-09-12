@@ -34,6 +34,54 @@ PROCESSED = ROOT / "data" / "processed"
 OUT = ROOT / "output"
 XS = ["abn_attention_weekday", "abn_attention_weekend"]
 
+#: §6.0：**每個主表另加一組以 `att_users_*`（獨立帳號數）為自變數的平行估計。**
+#: 主測度的週末窗口在 79.7% 的列上退化成水準值，獨立帳號數的相異值是它的 7 倍
+#: （`LIMITATIONS.md` §11）。舊語料的推文沒有帳號，A′／B 上此組必為 SKIPPED。
+MEASURES = [("", XS),
+            ("｜users", ["abn_attention_users_weekday",
+                         "abn_attention_users_weekend"])]
+
+
+def _estimate(std: pd.DataFrame, xs: list[str], tag: str, missing: list[str],
+              has_dt: bool, has_disp: bool) -> list[ModelResult]:
+    """單一測度的 H3a ＋ H3b。主表與「已排除混淆」的版本**必須並列**。"""
+    results: list[ModelResult] = []
+
+    # --- H3a：非三大法人訂單失衡 ---
+    base = [*BASE_CONTROLS, "non_inst_roi_lag1"]
+    results += fit_both_inferences(std, "non_inst_roi_next", xs, base,
+                                   f"H3a-1 ROI 主表{tag}", required_missing=missing)
+    if has_dt:
+        results += fit_both_inferences(std, "non_inst_roi_next", xs,
+                                       [*base, "dt_ratio"],
+                                       f"H3a-2 ROI ＋當沖控制{tag}",
+                                       required_missing=missing)
+        hi = std["dt_ratio"] > std["dt_ratio"].median()
+        for lab, sub in (("高當沖", std[hi]), ("低當沖", std[~hi])):
+            results += fit_both_inferences(sub, "non_inst_roi_next", xs, base,
+                                           f"H3a-3 ROI（{lab}半數）{tag}",
+                                           required_missing=missing)
+    else:
+        results += [ModelResult(f"H3a-2 ROI ＋當沖控制{tag}", "SKIPPED", inference=i,
+                                note="當沖資料不可用（robustness.day_trading）")
+                    for i in INFERENCE]
+
+    # --- H3b：異常周轉率 ---
+    base_t = [*BASE_CONTROLS, "turnover_lag1"]
+    results += fit_both_inferences(std, "turnover_next", xs, base_t,
+                                   f"H3b-1 周轉率 主表{tag}", required_missing=missing)
+    if has_disp:
+        keep = std[std["is_disposition_week_next"].fillna(False) == False]  # noqa: E712
+        results += fit_both_inferences(keep, "turnover_next", xs, base_t,
+                                       f"H3b-2 周轉率（排除次週處置）{tag}",
+                                       required_missing=missing)
+    else:
+        results += [ModelResult(f"H3b-2 周轉率（排除次週處置）{tag}", "SKIPPED",
+                                inference=i,
+                                note="處置清單不可用（robustness.disposition_stocks）")
+                    for i in INFERENCE]
+    return results
+
 
 def run(panel: pd.DataFrame, settings: dict) -> pd.DataFrame:
     missing = settings["regression"]["controls"]["required_but_missing"]
@@ -41,41 +89,19 @@ def run(panel: pd.DataFrame, settings: dict) -> pd.DataFrame:
     has_dt = "dt_ratio" in d.columns and d["dt_ratio"].notna().any()
     has_disp = ("is_disposition_week_next" in d.columns
                 and d["is_disposition_week_next"].notna().any())
-    std = standardize_within(d, [*XS, *BASE_CONTROLS,
-                                 *(["dt_ratio"] if has_dt else [])])
     results: list[ModelResult] = []
 
-    # --- H3a：非三大法人訂單失衡 ---
-    base = [*BASE_CONTROLS, "non_inst_roi_lag1"]
-    results += fit_both_inferences(std, "non_inst_roi_next", XS, base,
-                                   "H3a-1 ROI 主表", required_missing=missing)
-    if has_dt:
-        results += fit_both_inferences(std, "non_inst_roi_next", XS,
-                                       [*base, "dt_ratio"],
-                                       "H3a-2 ROI ＋當沖控制", required_missing=missing)
-        hi = std["dt_ratio"] > std["dt_ratio"].median()
-        for lab, sub in (("高當沖", std[hi]), ("低當沖", std[~hi])):
-            results += fit_both_inferences(sub, "non_inst_roi_next", XS, base,
-                                           f"H3a-3 ROI（{lab}半數）",
-                                           required_missing=missing)
-    else:
-        results += [ModelResult("H3a-2 ROI ＋當沖控制", "SKIPPED", inference=i,
-                                note="當沖資料不可用（robustness.day_trading）")
-                    for i in INFERENCE]
-
-    # --- H3b：異常周轉率 ---
-    base_t = [*BASE_CONTROLS, "turnover_lag1"]
-    results += fit_both_inferences(std, "turnover_next", XS, base_t,
-                                   "H3b-1 周轉率 主表", required_missing=missing)
-    if has_disp:
-        keep = std[std["is_disposition_week_next"].fillna(False) == False]  # noqa: E712
-        results += fit_both_inferences(keep, "turnover_next", XS, base_t,
-                                       "H3b-2 周轉率（排除次週處置）",
-                                       required_missing=missing)
-    else:
-        results += [ModelResult("H3b-2 周轉率（排除次週處置）", "SKIPPED", inference=i,
-                                note="處置清單不可用（robustness.disposition_stocks）")
-                    for i in INFERENCE]
+    for tag, xs in MEASURES:
+        if not all(c in d.columns for c in xs):
+            # 舊語料的推文無帳號 → 此測度**不可能存在**，不是樣本不足（§6.1b）
+            note = ("此規格的語料無此測度（缺欄位："
+                    + ";".join(c for c in xs if c not in d.columns) + "）")
+            results += [ModelResult(f"H3 平行測度{tag}", "SKIPPED", inference=i,
+                                    note=note) for i in INFERENCE]
+            continue
+        std = standardize_within(d, [*xs, *BASE_CONTROLS,
+                                     *(["dt_ratio"] if has_dt else [])])
+        results += _estimate(std, xs, tag, missing, has_dt, has_disp)
     return results_to_frame(results)
 
 

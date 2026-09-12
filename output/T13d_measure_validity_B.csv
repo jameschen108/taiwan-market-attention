@@ -1,0 +1,7 @@
+sample,measure,status,corr_all_weekday,corr_all_weekend,gap,n_obs,paper_weekday,paper_weekend,pattern_matches_paper,verdict_weekday,verdict_weekend,note
+全面板（v1 的基準）,發文數（主測度）,OK,0.9408,0.4274,0.5134,64980.0,0.9028,0.3981,True,✅ 幾乎逐位數複製,✅ 幾乎逐位數複製,
+全面板（v1 的基準）,留言則數,SKIPPED,,,,,,,,,,此規格的語料無此測度（缺欄位：abn_attention_comment_all）
+全面板（v1 的基準）,獨立帳號數,SKIPPED,,,,,,,,,,此規格的語料無此測度（缺欄位：abn_attention_users_all）
+主迴歸樣本 dense＋sparse,發文數（主測度）,OK,0.9417,0.4294,0.5123,38001.0,0.9028,0.3981,True,✅ 幾乎逐位數複製,✅ 幾乎逐位數複製,
+主迴歸樣本 dense＋sparse,留言則數,SKIPPED,,,,,,,,,,此規格的語料無此測度（缺欄位：abn_attention_comment_all）
+主迴歸樣本 dense＋sparse,獨立帳號數,SKIPPED,,,,,,,,,,此規格的語料無此測度（缺欄位：abn_attention_users_all）

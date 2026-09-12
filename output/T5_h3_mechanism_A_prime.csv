@@ -145,3 +145,5 @@ H3b-2 周轉率（排除次週處置）,firm_fe_1cluster,OK,50900,237,409,True,,
 H3b-2 周轉率（排除次週處置）,firm_fe_1cluster,OK,50900,237,409,True,,dense=3128;sparse=47772,turnover_lag1,0.14554062210144264,0.015942761313643913,9.128946939504644,0.0,0.11521324573226299
 H3b-2 周轉率（排除次週處置）,firm_fe_1cluster,OK,50900,237,409,True,,dense=3128;sparse=47772,att_zero_base_weekday,0.0043190213565931475,0.00068951072300182,6.263892949757283,3.7849079426166554e-10,0.11521324573226299
 H3b-2 周轉率（排除次週處置）,firm_fe_1cluster,OK,50900,237,409,True,,dense=3128;sparse=47772,att_zero_base_weekend,0.0027647679983223215,0.0006988892300297336,3.955945920363799,7.633613626412128e-05,0.11521324573226299
+H3 平行測度｜users,twoway_2cluster,SKIPPED,0,0,0,True,此規格的語料無此測度（缺欄位：abn_attention_users_weekday;abn_attention_users_weekend）,,,,,,,
+H3 平行測度｜users,firm_fe_1cluster,SKIPPED,0,0,0,True,此規格的語料無此測度（缺欄位：abn_attention_users_weekday;abn_attention_users_weekend）,,,,,,,

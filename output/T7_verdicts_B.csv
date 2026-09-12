@@ -1,0 +1,4 @@
+event,event_col,status,n_events_raw,n_events_matched,n_week_clusters,n_balanced,verdict
+all,is_initiation,OK,1376,619,190,4,匹配後事前差異仍顯著 → 反向因果未被消除，H7 在本設計下無法識別
+weekend,is_initiation_weekend,OK,216,99,79,3,匹配後事前差異仍顯著 → 反向因果未被消除，H7 在本設計下無法識別
+comment,comment_is_initiation,SKIPPED,0,0,0,0,此規格的語料無此測度（缺欄位：comment_is_initiation）
