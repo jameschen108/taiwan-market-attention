@@ -3,7 +3,7 @@
 重跑：
 
 ```bash
-python3 -m src.market.normalize          # 若中間產物不存在
+python3 -m src.market.normalize          # 若中間產物不存在（P5 之前這條是 no-op，見 REPLICATION.md §2）
 python3 -m src.features.build --source pttcc
 ```
 

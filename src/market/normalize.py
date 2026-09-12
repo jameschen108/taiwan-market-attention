@@ -12,7 +12,9 @@ FinMind `TaiwanStockPrice` 是**未還原權值**的收盤價。長尾個股的�
 
 from __future__ import annotations
 
+import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -251,3 +253,64 @@ def build_daily_panel(raw_root: Path, out_dir: Path, audit_dir: Path,
     print(f"market_daily {len(daily):,} 列，{daily['ticker'].nunique()} 檔，"
           f"{daily['date'].min().date()} ~ {daily['date'].max().date()}")
     return daily
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+#: 各來源的預設位置。`data/raw`、`data/twse`、`data/external` 都是指向 v1 專案的
+#: 唯讀來源（見 `.gitignore`），本模組只讀不寫。
+DEFAULTS = {
+    "raw_root": "data/raw/finmind",          # price / inst / dividend
+    "t86_dir": "data/twse/t86",              # TWSE 三大法人，2015-01 ~ 2024-12
+    "exrights_csv": "data/interim/ex_rights.csv",
+    "shareholding_csv": "data/interim/shareholding.csv",
+    "reduction_csv": "data/interim/capital_reductions.csv",
+    "out_dir": "data/interim",
+    "audit_dir": "audit",
+}
+
+
+def main(argv: list[str] | None = None) -> int:
+    """`python3 -m src.market.normalize` 重建 `data/interim/market_daily.parquet`。
+
+    這個進入點原本**不存在**，而 `audit/P3_panel.md` 的重跑指令裡寫著它——
+    跑下去不會報錯，只是什麼都沒做。行情層因此一直無法由文件化的指令重建
+    （`REPLICATION.md` §2）。
+
+    三個 `--*-csv` 由 `src.market.collect_*` 產生；缺檔時對應的還原或欄位會降級，
+    不會靜默補值——降級情形寫進 `audit/price_adjustment_report.csv`。
+    """
+    from ..config import ROOT
+
+    ap = argparse.ArgumentParser(description="重建日資料面板與交易日曆")
+    for key, val in DEFAULTS.items():
+        ap.add_argument(f"--{key.replace('_', '-')}", default=val)
+    args = ap.parse_args(argv)
+
+    def path(key: str) -> Path:
+        p = Path(getattr(args, key))
+        return p if p.is_absolute() else ROOT / p
+
+    raw_root, t86_dir = path("raw_root"), path("t86_dir")
+    if not raw_root.exists():
+        raise FileNotFoundError(f"找不到原始行情：{raw_root}")
+    out_dir, audit_dir = path("out_dir"), path("audit_dir")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    audit_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"[normalize] raw={raw_root.relative_to(ROOT)}  "
+          f"t86={'有' if t86_dir.exists() else '無（改用 FinMind inst）'}")
+    build_daily_panel(
+        raw_root=raw_root, out_dir=out_dir, audit_dir=audit_dir,
+        t86_dir=t86_dir if t86_dir.exists() else None,
+        exrights_csv=path("exrights_csv"), shareholding_csv=path("shareholding_csv"),
+        reduction_csv=path("reduction_csv"))
+    print(f"  → {(out_dir / 'market_daily.parquet').relative_to(ROOT)}")
+    print(f"  → {(out_dir / 'trading_days.csv').relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
