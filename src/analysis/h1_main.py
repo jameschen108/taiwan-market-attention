@@ -88,6 +88,25 @@ def run(panel: pd.DataFrame, settings: dict) -> pd.DataFrame:
             results += fit_both_inferences(d2, "ret_oc_next", xs, BASE_CONTROLS,
                                            f"{name}｜oc", required_missing=missing)
 
+    # --- 漲跌停截斷的穩健性（`robustness.price_limit`，LIMITATIONS.md §12.3）---
+    # 污染的是**應變數那一週**：週一開盤漲停時 `ret_gap_next` 被制度性截斷，
+    # 而 §5.0 的缺口證據線正好落在那裡。因此用 `touched_price_limit_next`，
+    # 與 H3b 用 `is_disposition_week_next` 是同一個理由。
+    rob = settings.get("robustness", {}).get("price_limit", {})
+    if (rob.get("enabled") and rob.get("exclude_weeks_touching_limit")
+            and "touched_price_limit_next" in d.columns):
+        keep = d1[d1["touched_price_limit_next"].fillna(False) == False]  # noqa: E712
+        for y, tag in RETURNS:
+            results += fit_both_inferences(
+                keep, y, ["abn_attention_weekday", "abn_attention_weekend"],
+                BASE_CONTROLS, f"H1-R 排除次週觸及漲跌停｜{tag}",
+                required_missing=missing)
+    else:
+        results += [ModelResult("H1-R 排除次週觸及漲跌停｜oc", "SKIPPED", inference=i,
+                                note="robustness.price_limit 未啟用或缺 "
+                                     "touched_price_limit_next")
+                    for i in INFERENCE]
+
     # --- 基準統計量的穩健性（§6.1）---
     med = ["abn_attention_weekday_medianbase", "abn_attention_weekend_medianbase"]
     if all(c in d.columns for c in med):

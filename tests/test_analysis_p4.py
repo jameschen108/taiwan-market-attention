@@ -217,3 +217,26 @@ def test_t15_marks_absent_parallel_measure_as_skipped(tmp_path, monkeypatch):
     row = verdicts[verdicts["moderator"] == "amihud"].iloc[0]
     assert row["status"] == "SKIPPED"
     assert row["verdict_agrees"] == ""
+
+
+def test_price_limit_robustness_uses_the_dependent_variable_week():
+    """漲跌停截斷污染的是**應變數那一週**，因此必須用 `_next` 旗標。
+
+    用本週的 `touched_price_limit` 會排錯一批列：截斷 `ret_*_next` 的是 t+1 週的
+    漲跌停，與 H3b 用 `is_disposition_week_next` 是同一個理由。
+    """
+    import inspect
+
+    from src.analysis import h1_main
+
+    src = inspect.getsource(h1_main.run)
+    assert "touched_price_limit_next" in src
+    assert 'rob.get("exclude_weeks_touching_limit")' in src
+
+
+def test_price_limit_robustness_is_enabled_in_settings():
+    """設定裡開著卻沒有模組讀它，等於預先登記卻沒跑——P4 第一輪就是這樣漏掉的。"""
+    from src.config import load_settings
+
+    rob = load_settings()["robustness"]["price_limit"]
+    assert rob["enabled"] and rob["exclude_weeks_touching_limit"]
