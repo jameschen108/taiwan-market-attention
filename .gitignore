@@ -1,6 +1,6 @@
 # 原始語料體積過大，不進版控（pttcc 3.6 GB）
 /data/pttcc/
-/data/data.zip
+/data/*.zip
 # 指向 v1 專案的唯讀來源資料
 /data/pttweb
 /data/raw
