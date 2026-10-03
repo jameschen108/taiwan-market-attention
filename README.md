@@ -6,7 +6,7 @@
 台灣長尾個股的邊界條件未被檢驗過。刻意偏離原論文之處逐項列於
 [`PROJECT.md`](PROJECT.md) §0.2。
 
-v2 是 [`taiwan-attention-long-tail`](../taiwan-attention-long-tail)（v1）用**新語料**
+v2 是 `taiwan-attention-long-tail`（v1，未公開）用**新語料**
 重做：改用 ptt.cc 直爬，換到帶留言帳號與時戳的資料，期間縮短為 2020–2024。
 
 | 文件 | 內容 |
