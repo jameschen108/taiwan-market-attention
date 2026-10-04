@@ -49,7 +49,7 @@ v2 是 `taiwan-attention-long-tail`（v1，未公開）用新語料
 
 ### P2 的核心結果
 
-以母文章時戳指派窗口（v1 唯一能做的事）會**低估週末關注度 22.4%**，且位移是
+以母文章時戳指派窗口（v1 唯一能做的事）會**低估週末關注度 22.3%**，且位移是
 單向的——平日發文→週末留言是反向的 3.9 倍。見 [`audit/P2_matching.md`](audit/P2_matching.md) §3。
 
 ### P4 開跑前的規格複核（2026-09-11）
@@ -95,7 +95,7 @@ Table 2 相關性）。核對過程中回退了兩項誤改：異常值基準與
 
 | 路徑 | 內容 | 版控 |
 |---|---|---|
-| `data/pttcc/stock_<年>.jsonl` | 新語料，2019–2024，158,395 篇 / 1,563 萬則留言 | ✗（3.6 GB） |
+| `data/pttcc/stock_<年>.jsonl` | 新語料，2019–2024，158,395 篇 / 1,563 萬則留言 | ✗（3.33 GB） |
 | `data/pttweb/` → v1 | 舊鏡像封存，供規格 B | ✗（symlink） |
 | `data/raw/`、`data/twse/`、`data/external/` → v1 | 行情、三大法人、除權息、減資 | ✗（symlink） |
 | `data/universe_267.csv`、`config/universe.yaml` | 研究宇宙 | ✓ |

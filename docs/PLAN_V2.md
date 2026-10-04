@@ -219,7 +219,7 @@ v2 的結果若與 v1 不同，有兩個互相混淆的原因。用三個規格�
   因為 v1 的週末係數在兩者之間跨過 5% 門檻（`PROJECT.md` §0.2）。
 - 新增 T14（**A/A′/B/C 四方對照**）、T15（推文平行測度）。
 - 每個主表另加：三個報酬定義各一次（`ret_cc_next` / `ret_gap_next` / `ret_oc_next`，
-  `PROJECT.md` §6.1）、`abn_attention_*_meanbase` 的基準穩健性。
+  `PROJECT.md` §6.1）、`abn_attention_*_medianbase` 的基準穩健性。
 
 ### P5　稽核、測試、文件
 

@@ -153,8 +153,8 @@ AbnAtt_{i,w}    = log1p(Att_{i,w}) − mean(log1p(Att_{i,w-8..w-1}))
 **基準沿用 v1 的 mean**（`attention.baseline: mean`）。median 版另出為
 `abn_attention_*_medianbase` 供穩健性，兩者 corr = 0.936（週末）／0.949（整週）。
 
-> **不要憑「關注度文獻慣例」把它改成 median。** 原論文的基準統計量在本專案的任何
-> 文件中都沒有記載（§0.2），而改成 median 在本樣本上會讓主要自變數退化：
+> **不要憑「關注度文獻慣例」把它改成 median。** 原論文的基準統計量是平均（§0.2 已核對
+> 原文），而改成 median 在本樣本上會讓主要自變數退化：
 > `att_weekend` 有 95% 的 ticker-week 為零，回顧窗中位數因此幾乎恆為 0，
 > `abn_attention_weekend` 會有 97.2% 的列等於水準值（mean 下為 79.7%）、
 > 相異值由 868 掉到 305。要改的話必須先回去讀論文確認，且必須在 P4 開跑前。
@@ -353,7 +353,8 @@ v1 只有第一個判準，因此 `is_bulk_listing` 的定義取決於「我們�
 
 ### 5.0 報酬拆成三段（v2 新增的證據線，不是修正）
 
-一週的價格路徑拆成互斥且窮盡的兩段，全部**還原權值後**計算：
+一週的價格路徑拆成互斥且窮盡的兩段（`ret_gap`、`ret_oc`），連同兩段合成的 `ret_cc`
+共三個報酬，全部**還原權值後**計算：
 
 ```
 ret_gap = 本週首個交易日開盤 / 上週最後交易日收盤 − 1     跨週末缺口
@@ -390,7 +391,7 @@ during the next week」），也與 v1 相同。§6.6 投資組合同樣用 `ret
 | `ret_cc_next`／`ret_oc_next`／`ret_gap_next` | 三段各一，供 §6.1 的分解規格 |
 | `ret_fwd2` … `ret_fwd8` | t+2 ~ t+8 週報酬，供 H5 反轉檢定（§6.3） |
 | `non_inst_roi_next` | 次週非三大法人訂單失衡 |
-| `turnover_next` | 次週異常周轉率 = log1p(週周轉率) − median(前 8 週)，與 AbnAtt 同一套定義 |
+| `turnover_next` | 次週異常周轉率 = log1p(週周轉率) − mean(前 8 週)，與 AbnAtt 同一套定義 |
 | `touched_price_limit` | 該 ticker-week 含至少一個 \|日報酬\| ≥ 9.85% 的交易日 |
 | `week_n_trading_days`／`is_incomplete_week` | 該報酬週的實際交易日數；不足 5 天為不完整 |
 

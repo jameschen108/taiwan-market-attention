@@ -19,7 +19,7 @@ python3 -m pip install -r requirements.txt
 
 | 路徑 | 內容 | 版控 | 取得方式 |
 |---|---|---|---|
-| `data/pttcc/stock_<年>.jsonl` | 新直爬語料，3.06 GB | ✗ | `~/GItHub/ptt-stock-crawler` |
+| `data/pttcc/stock_<年>.jsonl` | 新直爬語料，3.33 GB | ✗ | `~/GItHub/ptt-stock-crawler` |
 | `data/pttweb/batch-*/M.*.json` | 舊封存語料（規格 A′／B 需要） | ✗ | v1 專案，唯讀 |
 | `data/raw/`、`data/twse/`、`data/external/` | 行情、三大法人、宇宙清單 | ✗ | v1 專案，唯讀 |
 | `config/*.yaml` | 所有門檻 | ✓ | 本倉庫 |
