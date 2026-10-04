@@ -28,8 +28,8 @@ tier、ROI 的成交量下限、異常值基準統計量、報酬定義、週涵
 | `attention.max_codes_per_article` | 無此判準 | **15** | bulk 偵測不該取決於抽了哪 267 檔（§4） |
 | `att_zero_base` | 只有總表一個 | **逐窗口** | 虛擬變數必須與自變數同窗口（§2.3） |
 
-四項都與原論文的建構無關——論文的樣本沒有零關注度、沒有暖機期問題、沒有 bulk
-貼文、也沒有跨年邊界週。它們是把同一個設計搬到台股 PTT 長尾樣本後才出現的問題。
+四項都與原論文的建構無關：論文的樣本沒有零關注度、沒有暖機期問題、沒有 bulk
+貼文，也沒有跨年邊界週。它們是把同一個設計搬到台股 PTT 長尾樣本後才出現的問題。
 
 **對 §6.7 三方對照的後果**：規格 A 是 v1 的既有發表結果，用的是 v1 的定義；B／C
 用的是本表修正後的定義。因此 **A→B 不是純期間效果**，必須先插入 A′（見 §6.7）。
@@ -203,7 +203,7 @@ PTT 的零是真實的零，與 Google Trends 的 0（低於回報門檻，是�
 
 **虛擬變數必須與自變數同窗口**（§0.1）。`AbnAtt = 0` 有兩個經濟意義相反的來源：
 「回顧窗全零、當期也零」的長尾股，與「關注度剛好等於常態水準」的台積電。用
-`att_all` 算一個總表旗標不足以分辨主要自變數——實測 `abn_attention_weekend`
+`att_all` 算一個總表旗標不足以分辨主要自變數。實測 `abn_attention_weekend`
 恰為 0 的列佔 78.2%，`att_zero_base_weekend` 蓋到 **100.0%**，而 `att_all` 版
 只蓋到 **58.2%**。迴歸中一律使用與該式自變數同窗口的那一個。
 
@@ -242,8 +242,8 @@ PTT 的零是真實的零，與 Google Trends 的 0（低於回報門檻，是�
 見 `audit/ptt_category_distribution.csv`。
 
 本表是 `config/settings.yaml` 的 `effort:` 區塊的**鏡像**，而該區塊是
-`src/ptt/parse.py::effort_tier` 的**唯一**來源。以前程式與設定檔各有一份清單、
-設定檔那份還少了 `爆卦`／`投顧`，由
+`src/ptt/parse.py::effort_tier` 的**唯一**來源。以前程式與設定檔各有一份清單，
+設定檔那份還少了 `爆卦`／`投顧`；現在由
 `tests/test_core_logic.py::test_effort_tiers_come_only_from_the_settings_file` 守住。
 
 **推文不進入分層**。v2 的推文雖有帳號與時戳，主規格的 effort 分層仍只用文章，
@@ -301,7 +301,7 @@ is_bulk_listing = (n_tickers_in_article > 15)
 第三個判準由機器抽驗導出：名稱式排行表佔第一輪誤配的 **39%**。門檻與前兩者同為
 15，刻意不另行調參——散文型貼文的「名稱＋數字」對數實測不超過個位數。
 
-v1 只有第一個判準，因此 `is_bulk_listing` 的定義取決於「我們抽了哪 267 檔」——
+v1 只有第一個判準，因此 `is_bulk_listing` 的定義取決於「我們抽了哪 267 檔」。
 但**「這篇貼文是不是資料傾印」是貼文自己的性質**，與研究宇宙無關。實測改用聯集
 後，主樣本另有 18,775 列（15.3%）被正確歸入 bulk，反向只有 87 列。
 
@@ -377,9 +377,9 @@ during the next week」），也與 v1 相同。§6.6 投資組合同樣用 `ret
 | 平均 `ret_gap` | **+13.7 bp／週**（`ret_cc` 總平均 26.4 bp） |
 | corr(`ret_gap`, `ret_oc`) | **−0.086**（缺口部分反轉） |
 
-> **這是 v2 的新增證據線，不是對主規格的修改。** 曾有一版把主規格改成
-> `close_to_close`，理由是上面這段論證——但那是一項**提案中的偏離**，而論文與 v1
-> 都用 open-to-close，已回退（§0.2、`LIMITATIONS.md` §13）。要把 `ret_cc` 升為
+> **這是 v2 的新增證據線，不是對主規格的修改。** 曾有一版以上面這段論證為由，把
+> 主規格改成 `close_to_close`。但那是一項**提案中的偏離**，論文與 v1 都用
+> open-to-close，該修改已回退（§0.2、`LIMITATIONS.md` §13）。要把 `ret_cc` 升為
 > 主規格必須明示同意，且必須在 P4 開跑前。
 
 **上週收盤不得跨過完全休市的週去取**——整週休市時 `ret_gap`／`ret_cc` 維持缺值。
@@ -460,7 +460,7 @@ Ret_{i,t+1} = α + β₁·AbnAtt_weekday + β₂·AbnAtt_weekend
 ```
 
 `Ret_{i,t+1}` 為 `ret_next`（= `ret_oc_next`，§5.0）。**zero-base 虛擬變數逐窗口**，
-與該式的自變數一一對應（§2.3）——只放一個 `att_all` 版蓋不住主要自變數。
+與該式的自變數一一對應（§2.3）；只放一個 `att_all` 版蓋不住主要自變數。
 
 `X` 為 `regression.controls.available`：`log_market_cap`、`turnover`、`amihud`、
 `ret_lag1`、`ret_lag4`、`ret_lag25`、`foreign_holding_pct`、`listing_age_years`
@@ -564,7 +564,7 @@ v2 的結果若與 v1 不同，有三個互相混淆的原因。用三個規格�
 
 A′ 的產出成本只有一次重跑：`ptt.source=pttweb` ＋ `sample.main_start=2015-05-01`
 （`ptt_warmup_start` 設為 pttweb 起點 2015-04-27，價格回填已涵蓋）。
-配對層無需重跑——`data/interim/ptt_matches_pttweb.parquet` 已是 v2 定義下的全期產出。
+配對層無需重跑：`data/interim/ptt_matches_pttweb.parquet` 已是 v2 定義下的全期產出。
 
 **B→C 不是單一效果。** 新語料在文章層是舊封存的真子集，少掉 14.06% 且刪文非
 隨機（`audit/P0_corpus_integrity.md`）。T14 必須把 B→C 拆成「已刪文流失」與
@@ -581,7 +581,7 @@ A′ 的產出成本只有一次重跑：`ptt.source=pttweb` ＋ `sample.main_st
 
 `data/processed/analysis_readiness.csv` 的 `formal_main_return` 為權威旗標。
 目前為 **False**（缺 `news_count`、分析師覆蓋、四因子等授權資料），因此**所有結果
-均為 diagnostic**。換語料不解除任何標記——`formal_main_return` 為 False 的根因是
+均為 diagnostic**。換語料不解除任何標記：`formal_main_return` 為 False 的根因是
 授權資料與新聞管道，與 PTT 語料無關。
 
 ---
@@ -596,4 +596,4 @@ A′ 的產出成本只有一次重跑：`ptt.source=pttweb` ＋ `sample.main_st
    前定案，且每一項都獨立於研究假說的方向。修正之後就同樣鎖死：一旦看過任何係數
    就不得再動。
 6. **原論文的建構細節不得靠推論補**（§0.2）。缺記載時回去讀論文，或明寫「沿用 v1
-   的做法」——已經因為代入其他文獻的慣例而改錯過一次。
+   的做法」。本專案已經因為代入其他文獻的慣例而改錯過一次。

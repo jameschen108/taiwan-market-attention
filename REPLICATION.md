@@ -77,7 +77,7 @@ python3 -m src.market.normalize
 > **v2 不重新收集任何行情資料**：既有收集全部蓋過 2020–2024 主樣本與 2019 暖機期。
 > `src/market/collect_*.py` 一律 cache-first，重跑不會重打 API。
 >
-> 這個進入點**在 P5 之前不存在**——`audit/P3_panel.md` 的重跑指令裡寫著它，但跑下去
+> 這個進入點**在 P5 之前不存在**：`audit/P3_panel.md` 的重跑指令裡寫著它，但跑下去
 > 不會報錯也不會做任何事。已補上，並驗證重建結果與既有檔案**逐欄完全一致**。
 
 制度資料（P3.5，`LIMITATIONS.md` §12）：
@@ -140,7 +140,7 @@ python3 -m src.analysis.spec_comparison                   # T14 面板層 ＋ �
 跑不動時不會靜默略過：舊語料沒有留言／帳號測度，A′ 與 B 的對應模型一律
 `SKIPPED` 並在 `note` 欄寫明「此規格的語料無此測度」。
 
-H4 補班日在 v2 事件數為零，`audit/model_status_*.csv` 記為 `SKIP`——
+H4 補班日在 v2 事件數為零，`audit/model_status_*.csv` 記為 `SKIP`。
 這是**事件為零**，不是檢定力不足（`LIMITATIONS.md` §3）。
 
 ---
@@ -204,7 +204,7 @@ python3 -m src.audit_expected --freeze    # 只在確認新數字正確之後
 ## 7. 讀結果之前必須知道的四件事
 
 1. **所有結果均為 `diagnostic`**（`PROJECT.md` §7）。`formal_main_return` 為 False
-   的根因是 `news_count`、分析師覆蓋、四因子未取得——換語料不解除任何標記。
+   的根因是 `news_count`、分析師覆蓋、四因子未取得；換語料不解除任何標記。
 2. **推論母體只能寫「本樣本涵蓋之 267 檔個股」**，不得寫「台股」。
 3. **每個主表都同時報兩種推論標準**。v2 的 H1 週末係數在兩者之間跨過 5% 門檻，
    只報其中一種會給出相反的結論（`LIMITATIONS.md` §13）。
