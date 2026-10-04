@@ -48,11 +48,10 @@ attention:
   lookback_weeks: 8
   min_periods: 8
   transform: log1p
-  # 回顧窗基準的統計量。**沿用 v1 的 mean**，理由是 §6.7 的四方對照要求 A/A′ 與
-  # v1 逐項可比；原論文（Li et al.，MIS Quarterly）的 ASVI 基準統計量在本專案
-  # 的任何文件中都沒有記載，**不得假設是 median**（PROJECT.md §0.2）。
+  # 回顧窗基準的統計量。**mean**：原論文（Li et al.，MIS Quarterly）的 ASVI 以前 8 週
+  # 平均為基準（PROJECT.md §0.2 已核對原文），v1 也用 mean，§6.7 的四方對照因此
+  # 逐項可比。曾被誤改為 median，已回退（LIMITATIONS.md §13）。
   # median 版另出為 abn_attention_*_medianbase，兩者 corr ≈ 0.94。
-  # 若日後自論文確認基準為 median，改這一行並重建 P3 即可，但必須在 P4 開跑前。
   baseline: mean                      # median | mean
   sparsity_lookback_weeks: 52
   # 52 週窗必須**滿窗**才給值——缺值維持缺值。設 1 的話沒有暖機期也不會報錯，

@@ -19,15 +19,16 @@ EFFORTS = ("high_effort", "mid_effort", "low_effort")
 
 def abnormal_attention(counts: pd.Series, lookback: int = 8,
                        min_periods: int = 8, transform: str = "log1p",
-                       baseline: str = "median") -> pd.Series:
-    """AbnAtt = f(Att_w) − g(f(Att_{w-8..w-1}))，g 為 median（主規格）或 mean。
+                       baseline: str = "mean") -> pd.Series:
+    """AbnAtt = f(Att_w) − g(f(Att_{w-8..w-1}))，g 為 mean（主規格）或 median。
 
     回顧窗**嚴格不含當期**，避免 look-ahead。不足 min_periods 維持缺值。
 
-    **basis 為什麼是 median**：原論文的 ASVI 用回顧窗的中位數，理由是不讓窗內的
-    單週爆量把基準拉高。本樣本恰好最吃這一點——`att_weekend` 均值 0.13、95% 為零，
-    回顧窗典型長相是 {0,0,0,0,0,0,0,1}，mean 給 0.087、median 給 0。
-    mean 版保留為穩健性（`abn_attention_*_meanbase`），兩者 corr ≈ 0.94。
+    **基準為什麼是 mean**：原論文的 ASVI 以前 8 週的平均為基準（PROJECT.md §0.2
+    已核對原文），v1 也用 mean。median 在本樣本上會讓主要自變數退化：`att_weekend`
+    均值 0.13、95% 為零，回顧窗典型長相是 {0,0,0,0,0,0,0,1}，median 給 0、mean 給
+    0.087，異常化幾乎失效（LIMITATIONS.md §11）。median 版保留為穩健性
+    （`abn_attention_*_medianbase`），兩者 corr ≈ 0.94。
     """
     if transform == "log1p":
         values = np.log1p(counts.astype(float))
@@ -196,7 +197,7 @@ def _finalize(panel: pd.DataFrame, idx: pd.MultiIndex, att: dict, spa: dict,
     """
     count_cols = [c for c in panel.columns if c.startswith("att_")]
     lookback, mp = att["lookback_weeks"], att["min_periods"]
-    transform, baseline = att["transform"], att.get("baseline", "median")
+    transform, baseline = att["transform"], att.get("baseline", "mean")
     sp_mp = att.get("sparsity_min_periods", att["sparsity_lookback_weeks"])
     # 主要自變數所在的窗口都要有自己的 zero-base；base_col 一律包含
     zero_base_cols = [base_col] + [
@@ -215,7 +216,7 @@ def _finalize(panel: pd.DataFrame, idx: pd.MultiIndex, att: dict, spa: dict,
             if label in ("all", "weekend", "weekday"):
                 block[f"abn_attention_{label}_posonly"] = abnormal_attention(
                     grp[col], lookback, mp, "log_positive", baseline).values
-                # 基準統計量的穩健性：主規格 median，此欄為 mean（PROJECT.md §2）
+                # 基準統計量的穩健性：主規格 mean，此欄為 median（PROJECT.md §2）
                 other = "mean" if baseline == "median" else "median"
                 block[f"abn_attention_{label}_{other}base"] = abnormal_attention(
                     grp[col], lookback, mp, transform, other).values

@@ -317,7 +317,7 @@ def test_thresholds_locked_before_results():
     assert s["attention"]["lookback_weeks"] == 8
     assert s["sparsity"]["dense_min_nonzero_weeks"] == 40
     # v2 的四項測度正確性修正，全部在跑出任何係數之前定案（PROJECT.md §0.1）
-    # baseline 不在其中：沿用 v1 的 mean，因為原論文的基準統計量無記載（§0.2）
+    # baseline 不在其中：mean 與原論文及 v1 相同（§0.2），不是修正
     assert s["attention"]["baseline"] == "mean"
     assert s["attention"]["sparsity_min_periods"] == s["attention"]["sparsity_lookback_weeks"]
     assert s["sample"]["week_containment"] == "full"
