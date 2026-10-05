@@ -1,5 +1,7 @@
 # 台股長尾關注度（v2）
 
+中文 | [English](README.en.md)
+
 投資人在市場關閉時累積的關注度，會不會反映在下一週的股價上？
 
 Li, Liu, Ye, Zhao & Zhao 的 *"It Depends on When You Search"*（MIS Quarterly、
